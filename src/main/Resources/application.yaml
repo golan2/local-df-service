@@ -1,0 +1,14 @@
+spring:
+  main:
+    banner-mode: "off"
+server:
+  port : 8081
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  level:
+    com.golan: TRACE
+    org.springframework.web: TRACE
+    com.howtodoinjava: INFO
+    org.hibernate: ERROR
