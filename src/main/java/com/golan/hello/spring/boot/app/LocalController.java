@@ -1,6 +1,8 @@
 package com.golan.hello.spring.boot.app;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.golan.hello.spring.registry.ObjectCount;
+import com.golan.hello.spring.registry.ObjectsResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -101,5 +104,16 @@ public class LocalController {
         else {
             return Collections.singletonList(objectCountPerClass.get(className));
         }
+    }
+
+    @GetMapping(value="/objects/{org}/{proj}~{env}/{clazz}", produces= MediaType.APPLICATION_JSON_VALUE)
+    public ObjectsResponse getObjectsOfClass(@PathVariable("org") String org,
+                                             @PathVariable("proj") String proj,
+                                             @PathVariable("env") String env,
+                                             @PathVariable("clazz") String clazz,
+                                             @RequestParam(value = "limit", defaultValue = "-1", required = false) int limit,
+                                             @RequestParam(value = "cursor", defaultValue = "", required = false) String cursor  ) throws IOException {
+        final ObjectMapper mapper = new ObjectMapper();
+        return mapper.readValue("{\"meta\":{\"cursor\":null,\"next_cursor\":\"ffe59b58-508b-11e9-a344-35f60872cf87\",\"limit\":10},\"objects\":[{\"identifier\":\"4562162491\",\"has_cert\":false,\"lastStreamUpdate\":null,\"created_at\":\"2019-05-21T21:54:25.759Z\",\"description\":null,\"class\":\"tracker\"},{\"identifier\":\"4562169065\",\"has_cert\":false,\"lastStreamUpdate\":null,\"created_at\":\"2019-03-13T12:53:29.382Z\",\"description\":null,\"class\":\"tracker\"},{\"identifier\":\"4562182399\",\"has_cert\":false,\"lastStreamUpdate\":null,\"created_at\":\"2019-03-27T13:12:40.656Z\",\"description\":null,\"class\":\"tracker\"},{\"identifier\":\"4562289473\",\"has_cert\":false,\"lastStreamUpdate\":null,\"created_at\":\"2019-01-21T01:36:40.205Z\",\"description\":null,\"class\":\"tracker\"},{\"identifier\":\"4562243145\",\"has_cert\":false,\"lastStreamUpdate\":null,\"created_at\":\"2019-03-27T11:32:27.657Z\",\"description\":null,\"class\":\"tracker\"},{\"identifier\":\"4562017740\",\"has_cert\":false,\"lastStreamUpdate\":null,\"created_at\":\"2019-03-27T13:12:40.566Z\",\"description\":null,\"class\":\"tracker\"},{\"identifier\":\"4562131381\",\"has_cert\":false,\"lastStreamUpdate\":null,\"created_at\":\"2019-03-28T03:10:11.663Z\",\"description\":null,\"class\":\"tracker\"},{\"identifier\":\"4562010053\",\"has_cert\":false,\"lastStreamUpdate\":null,\"created_at\":\"2019-03-27T12:36:53.055Z\",\"description\":null,\"class\":\"tracker\"},{\"identifier\":\"4562043865\",\"has_cert\":false,\"lastStreamUpdate\":null,\"created_at\":\"2019-05-21T21:18:38.124Z\",\"description\":null,\"class\":\"tracker\"},{\"identifier\":\"4562174234\",\"has_cert\":false,\"lastStreamUpdate\":null,\"created_at\":\"2019-03-27T12:29:43.542Z\",\"description\":null,\"class\":\"tracker\"}]}", ObjectsResponse.class);
     }
 }
