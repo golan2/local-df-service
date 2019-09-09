@@ -1,5 +1,5 @@
 
-package com.golan.hello.spring.orchestration;
+package com.golan.hello.spring.orchestration.environments;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,19 +16,22 @@ import lombok.AllArgsConstructor;
 @JsonPropertyOrder({
     "identifier",
     "name",
-    "role",
-    "confirmed"
+    "description",
+    "promote_to",
+    "deployed_at"
 })
-public class Organization {
+public class Environment {
 
     @JsonProperty("identifier")
     private String identifier;
     @JsonProperty("name")
     private String name;
-    @JsonProperty("role")
-    private String role;
-    @JsonProperty("confirmed")
-    private Boolean confirmed;
+    @JsonProperty("description")
+    private String description;
+    @JsonProperty("promote_to")
+    private Object promoteTo;
+    @JsonProperty("deployed_at")
+    private Object deployedAt;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
@@ -52,24 +55,34 @@ public class Organization {
         this.name = name;
     }
 
-    @JsonProperty("role")
-    public String getRole() {
-        return role;
+    @JsonProperty("description")
+    public String getDescription() {
+        return description;
     }
 
-    @JsonProperty("role")
-    public void setRole(String role) {
-        this.role = role;
+    @JsonProperty("description")
+    public void setDescription(String description) {
+        this.description = description;
     }
 
-    @JsonProperty("confirmed")
-    public Boolean getConfirmed() {
-        return confirmed;
+    @JsonProperty("promote_to")
+    public Object getPromoteTo() {
+        return promoteTo;
     }
 
-    @JsonProperty("confirmed")
-    public void setConfirmed(Boolean confirmed) {
-        this.confirmed = confirmed;
+    @JsonProperty("promote_to")
+    public void setPromoteTo(Object promoteTo) {
+        this.promoteTo = promoteTo;
+    }
+
+    @JsonProperty("deployed_at")
+    public Object getDeployedAt() {
+        return deployedAt;
+    }
+
+    @JsonProperty("deployed_at")
+    public void setDeployedAt(Object deployedAt) {
+        this.deployedAt = deployedAt;
     }
 
     @JsonAnyGetter
