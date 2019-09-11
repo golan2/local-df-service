@@ -2,14 +2,13 @@ package com.golan.hello.spring.boot.app;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.golan.hello.spring.registry.Meta;
 import com.golan.hello.spring.orchestration.environments.Environment;
 import com.golan.hello.spring.orchestration.environments.EnvironmentsResponse;
 import com.golan.hello.spring.orchestration.organizations.Organization;
-import com.golan.hello.spring.orchestration.organizations.OrganizationsResponse;
 import com.golan.hello.spring.orchestration.projects.Project;
 import com.golan.hello.spring.orchestration.projects.ProjectsResponse;
 import com.golan.hello.spring.orchestration.spec.ProjectSpec;
+import com.golan.hello.spring.registry.Meta;
 import com.golan.hello.spring.registry.ObjectCount;
 import com.golan.hello.spring.registry.ObjectsResponse;
 import com.golan.hello.spring.registry.RegObject;
@@ -20,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -59,7 +59,7 @@ public class LocalController {
     private static final String CLASS_COW = "cow";
 
     private static final Map<UUID, Map<String, ObjectCount>> DFQL_OBJECT_COUNT_PER_CLASS = initDfqlObjectCountPerClass();
-    private static final int WHITE_RAVEN_ORG_COUNT = 1;
+    private static final int WHITE_RAVEN_ORG_COUNT = 2;
     private static final int WHITE_RAVEN_PROJ_PER_ORG = 2;
     private static final List<Organization> WHITE_RAVEN_ORGANIZATIONS = initWhiteRavenOrganizations();
     private static final List<Project> WHITE_RAVEN_PROJECTS = initWhiteRavenProjects();
@@ -116,8 +116,17 @@ public class LocalController {
 
     @SuppressWarnings("unused")
     @GetMapping(value = "/projects/{org}/{project}/spec/revisions/latest/source.json", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String getLatestProjectSpec(@PathVariable("org") String org, @PathVariable("project") String project, @RequestParam("with_env_uuid") String with_env_uuid) throws Exception {
-        log.debug("[getLatestProjectSpec] org={} prog={} withEnv={}", org, project, with_env_uuid);
+    public String getLatestProjectSpec(@PathVariable("org") String organization,
+                                       @PathVariable("project") String project,
+                                       @RequestParam("with_env_uuid") String with_env_uuid,
+                                       @RequestHeader(name="X-Internal-Token", defaultValue="", required=false) String internalToken) throws Exception {
+        log.debug("[getLatestProjectSpec] organization={} project={} withEnv={}", organization, project, with_env_uuid);
+        log.debug("X-Internal-Token: {}", internalToken);
+
+
+//        if ("1".equals(organization) && "2~dev".equals(project)) {
+//            return null;//new ObjectMapper().writeValueAsString(new ProjectSpec("", null, null));
+//        }
 
         final String proj;
         final String env;
@@ -131,13 +140,13 @@ public class LocalController {
             env = "prod";
         }
 
-        final Env envObj = findEnvForWhiteRaven(org, proj, env);
+        final Env envObj = findEnvForWhiteRaven(organization, proj, env);
 
         if (envObj != null ) {
             return projectSpecForWhiteRaven(envObj);
         }
         else {
-            return projectSpecForDfql(org, project);
+            return projectSpecForDfql(organization, project);
         }
     }
 
@@ -204,12 +213,14 @@ public class LocalController {
     }
 
     @GetMapping(value = "/objects/{org}/{proj}~{env}/{clazz}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ObjectsResponse getObjectsOfClass(@PathVariable("org") String org,
-                                             @PathVariable("proj") String proj,
-                                             @PathVariable("env") String env,
-                                             @PathVariable("clazz") String clazz,
-                                             @RequestParam(value = "limit", defaultValue = "100", required = false) int limit,
-                                             @RequestParam(value = "cursor", defaultValue = "", required = false) String cursor) {
+    public ObjectsResponse getObjectsOfClass(
+            @PathVariable("org") String org,
+            @PathVariable("proj") String proj,
+            @PathVariable("env") String env,
+            @PathVariable("clazz") String clazz,
+            @RequestParam(value = "limit", defaultValue = "100", required = false) int limit,
+            @RequestParam(value = "cursor", defaultValue = "", required = false) String cursor) {
+
         final ObjectsResponse objectsResponse = new ObjectsResponse();
         int objectCount = whiteRavenObjectCountPerClass(clazz);
         final ArrayList<RegObject> objects = new ArrayList<>(limit);
@@ -243,18 +254,14 @@ public class LocalController {
         }
     }
 
-    @GetMapping(value = "/organizations", produces = MediaType.APPLICATION_JSON_VALUE)
-    public OrganizationsResponse getOrganizations() {
-        final OrganizationsResponse organizationsResponse = new OrganizationsResponse();
-        organizationsResponse.setMeta(new Meta());
-        organizationsResponse.setOrganizations(WHITE_RAVEN_ORGANIZATIONS);
-        return organizationsResponse;
-    }
-
     @GetMapping(value = "/projects", produces = MediaType.APPLICATION_JSON_VALUE)
     public ProjectsResponse getProjects(
             @RequestParam(value = "limit", defaultValue = "100", required = false) int limit,
-            @RequestParam(value = "cursor", defaultValue = "", required = false) String cursor) throws IOException {
+            @RequestParam(value = "cursor", defaultValue = "", required = false) String cursor,
+            @RequestHeader(name="X-Internal-Token", defaultValue="", required=false) String internalToken) {
+
+        log.debug("[getProjects] limit={} cursor={}", limit, cursor);
+        log.debug("X-Internal-Token: {}", internalToken);
 
         final ProjectsResponse projectsResponse = new ProjectsResponse();
         final Meta meta = new Meta();
@@ -288,8 +295,14 @@ public class LocalController {
     }
 
     @GetMapping(value = "/environments/{org}/{project}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public EnvironmentsResponse getProjects(@PathVariable("org") String org,
-                                            @PathVariable("project") String project) {
+    public EnvironmentsResponse getEnvironmentsForProject(
+            @PathVariable("org") String org,
+            @PathVariable("project") String project,
+            @RequestHeader(name="X-Internal-Token", defaultValue="", required=false) String internalToken) {
+
+        log.debug("[getProjects] org={} project={}", org, project);
+        log.debug("X-Internal-Token: {}", internalToken);
+
         final EnvironmentsResponse environmentsResponse = new EnvironmentsResponse();
         environmentsResponse.setDefault("prod");
         final ArrayList<Environment> environments = new ArrayList<>(2);
@@ -316,7 +329,7 @@ public class LocalController {
 
         private static List<UUID> init() {
             final ArrayList<UUID> res = new ArrayList<>(100);
-            for (int i = 1; i <= 100; i++) {
+            for (int i = 1; i <= WHITE_RAVEN_ORG_COUNT*WHITE_RAVEN_PROJ_PER_ORG*2; i++) {
                 res.add( UUID.fromString("8fab5a7d-72e7-40ce-8d02-01fce3"+String.format("%06d", i)) );
             }
             return res;
