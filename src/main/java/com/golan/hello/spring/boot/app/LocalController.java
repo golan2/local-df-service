@@ -1,20 +1,13 @@
 package com.golan.hello.spring.boot.app;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.golan.hello.spring.orchestration.environments.Environment;
 import com.golan.hello.spring.orchestration.environments.EnvironmentsResponse;
-import com.golan.hello.spring.orchestration.organizations.Organization;
 import com.golan.hello.spring.orchestration.projects.Project;
 import com.golan.hello.spring.orchestration.projects.ProjectsResponse;
-import com.golan.hello.spring.orchestration.spec.ProjectSpec;
 import com.golan.hello.spring.registry.Meta;
 import com.golan.hello.spring.registry.ObjectCount;
 import com.golan.hello.spring.registry.ObjectsResponse;
 import com.golan.hello.spring.registry.RegObject;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,28 +17,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @SuppressWarnings("unused")
 @RequestMapping("/v1")
 @RestController
 @Slf4j
 public class LocalController {
-
-    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-
 
     private static final String ID_ORG_PROJ = "892daa98-e8dd-11e8-9f32-f2801f1b9fd1";
     private static final String PS_ORG_PROJ = "{\"apiVersion\":0,\"classes\":{\"vehicle\":{\"name\":\"Vehicle\",\"streams\":{\"packetId\":{\"name\":\"PacketID\",\"type\":\"number\"},\"location\":{\"name\":\"Location\",\"type\":\"geopoint\"},\"deviceId\":{\"name\":\"DeviceID\",\"type\":\"integer\"},\"vin\":{\"name\":\"VIN\",\"type\":\"text\"},\"unixTime\":{\"name\":\"Unix Time\",\"type\":\"number\"},\"reasonCode\":{\"name\":\"Reason Code\",\"type\":\"number\"},\"heading\":{\"name\":\"Heading\",\"type\":\"number\"},\"hdop\":{\"name\":\"Hdop\",\"type\":\"number\"},\"numSats\":{\"name\":\"NumStats\",\"type\":\"number\"},\"vehicleBattVolts\":{\"name\":\"Vehicle Battery Volts\",\"type\":\"number\"},\"gpsLifetimeOdom\":{\"name\":\"GPS Lifetime Odom\",\"type\":\"number\"},\"packetSerialNumber\":{\"name\":\"Packet Serial Number\",\"type\":\"number\"},\"speed\":{\"name\":\"Speed\",\"type\":\"number\"},\"imei\":{\"name\":\"IMEI\",\"type\":\"number\"},\"dtcSize\":{\"name\":\"DTCSize\",\"type\":\"number\"},\"dtcArray\":{\"name\":\"DTCArray\",\"type\":\"number\"},\"acceleration\":{\"name\":\"Acceleration\",\"type\":\"number\"},\"deceleration\":{\"name\":\"Deceleration\",\"type\":\"number\"},\"crashPacketSize\":{\"name\":\"Crash Packet Size\",\"type\":\"number\"},\"crashPacket\":{\"name\":\"Crash Packet\",\"type\":\"number\"},\"idleTime\":{\"name\":\"Idle Time\",\"type\":\"number\"},\"rpm\":{\"name\":\"RPM\",\"type\":\"number\"},\"obdVehicleSpeed\":{\"name\":\"OBD Vehicle Speed\",\"type\":\"number\"},\"rawMessage\":{\"name\":\"Raw hex data from device\",\"type\":\"text\"},\"gpsSpeed\":{\"name\":\"GPS Speed\",\"type\":\"integer\"},\"wakeReason\":{\"name\":\"Wake Reason\",\"type\":\"number\"},\"mil\":{\"name\":\"MIL\",\"type\":\"integer\"},\"ecuCount\":{\"name\":\"ECU Count\",\"type\":\"integer\"},\"ecuID\":{\"name\":\"ECU ID\",\"type\":\"text\"},\"dtcCount\":{\"name\":\"DTC Count\",\"type\":\"integer\"},\"dtcCodes\":{\"name\":\"DTC Codes Object Array\",\"type\":\"text\"}},\"adapter\":{\"template\":\"custom-adapter\",\"publishTo\":\"telemetry\",\"count\":2}},\"error\":{\"name\":\"Error\",\"streams\":{\"message\":{\"name\":\"Message\",\"type\":\"text\"},\"code\":{\"name\":\"Code\",\"type\":\"text\"}}}},\"architecture\":{\"telemetry\":{\"type\":\"input\",\"name\":\"Telemetry\"},\"storage\":{\"type\":\"storage\",\"from\":[\"telemetry\",\"errors\"],\"name\":\"Data Storage\"},\"cartasiteEndpoint\":{\"type\":\"custom\",\"from\":[\"telemetry\"],\"config\":{\"count\":2,\"template\":\"custom-adapter\",\"properties\":{\"cartasiteUrl\":\"${CARTASITE_URL}\"}}},\"rawDatatoXirgo\":{\"type\":\"custom\",\"from\":[\"RawXirgoDataOnOff\"],\"comment\":\"This output is just the raw data so that Xirgo can troubleshoot several issuestwo.\",\"config\":{\"count\":2,\"template\":\"custom-adapter\"}},\"RawXirgoDataOnOff\":{\"type\":\"condition\",\"from\":[\"telemetry\"],\"config\":{\"conditions\":[{\"allOf\":[{\"data.unixTime\":[{\"eq\":\"0\"}]}]}]}},\"errors\":{\"type\":\"input\",\"name\":\"Errors\"}},\"services\":{\"importRegDevices\":{\"template\":\"custom-service\",\"count\":2}},\"env_uuid\":\"" + ID_ORG_PROJ + "\"}";
@@ -59,12 +43,6 @@ public class LocalController {
     private static final String CLASS_COW = "cow";
 
     private static final Map<UUID, Map<String, ObjectCount>> DFQL_OBJECT_COUNT_PER_CLASS = initDfqlObjectCountPerClass();
-    private static final int WHITE_RAVEN_ORG_COUNT = 2;
-    private static final int WHITE_RAVEN_PROJ_PER_ORG = 2;
-    private static final List<Organization> WHITE_RAVEN_ORGANIZATIONS = initWhiteRavenOrganizations();
-    private static final List<Project> WHITE_RAVEN_PROJECTS = initWhiteRavenProjects();
-    private static final List<Env> WHITE_RAVEN_ENVS = initWhiteRavenEnvironments();
-
 
     private static Map<UUID, Map<String, ObjectCount>> initDfqlObjectCountPerClass() {
 
@@ -82,37 +60,6 @@ public class LocalController {
         return result;
     }
 
-    private static List<Organization> initWhiteRavenOrganizations() {
-        final ArrayList<Organization> res = new ArrayList<>();
-        for (int i = 1; i <= WHITE_RAVEN_ORG_COUNT; i++) {
-            res.add(new Organization(""+i, "wr_org"+i, "member", true, null));
-        }
-        return res;
-    }
-
-
-    private static List<Project> initWhiteRavenProjects() {
-        final ArrayList<Project> res = new ArrayList<>();
-        for (Organization org : WHITE_RAVEN_ORGANIZATIONS) {
-            for (int i = 1; i <= WHITE_RAVEN_PROJ_PER_ORG; i++) {
-                res.add(new Project(org.getIdentifier(), ""+i, "proj_" + i, "", null));
-            }
-        }
-        return res;
-    }
-
-    private static List<Env> initWhiteRavenEnvironments() {
-        final Stream<Project> a = WHITE_RAVEN_PROJECTS
-                .stream();
-        final Stream<Env> b = a
-                .flatMap( project ->
-                        Arrays.stream(new Env[]{
-                                new Env(project.getOrganization(), project.getIdentifier(), "dev", UuidStore.next()),
-                                new Env(project.getOrganization(), project.getIdentifier(), "prod", UuidStore.next())
-                        }));
-        return b.collect(Collectors.toList());
-    }
-
 
     @SuppressWarnings("unused")
     @GetMapping(value = "/projects/{org}/{project}/spec/revisions/latest/source.json", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -122,11 +69,6 @@ public class LocalController {
                                        @RequestHeader(name="X-Internal-Token", defaultValue="", required=false) String internalToken) throws Exception {
         log.debug("[getLatestProjectSpec] organization={} project={} withEnv={}", organization, project, with_env_uuid);
         log.debug("X-Internal-Token: {}", internalToken);
-
-
-//        if ("1".equals(organization) && "2~dev".equals(project)) {
-//            return null;//new ObjectMapper().writeValueAsString(new ProjectSpec("", null, null));
-//        }
 
         final String proj;
         final String env;
@@ -140,34 +82,14 @@ public class LocalController {
             env = "prod";
         }
 
-        final Env envObj = findEnvForWhiteRaven(organization, proj, env);
+        final Env envObj = WhiteRaven.findEnvironment(organization, proj, env);
 
         if (envObj != null ) {
-            return projectSpecForWhiteRaven(envObj);
+            return WhiteRaven.projectSpecForWhiteRaven(envObj);
         }
         else {
             return projectSpecForDfql(organization, project);
         }
-    }
-
-    private static Env findEnvForWhiteRaven(String org, String proj, String env) {
-        return WHITE_RAVEN_ENVS
-                .stream()
-                .filter( e -> e.getOrg().equals(org) && e.getProj().equals(proj) && e.getEnv().equals(env) )
-                .findAny()
-                .orElse(null);
-    }
-
-    private String projectSpecForWhiteRaven(Env env) throws JsonProcessingException {
-        Map<String, ProjectSpec.Class> classes = new HashMap<>();
-        for (int i = 0; i < 3; i++) {
-            final String className = "class_" + env.getOrg() + "_" + env.getProj() + "_" + env.getEnv() + "_" + i;
-            classes.put(className, new ProjectSpec.Class(className, false, null));
-        }
-        return new ObjectMapper()
-                .writeValueAsString(
-                        new ProjectSpec(env.getUuid().toString(), null, classes)
-                );
     }
 
     private String projectSpecForDfql(@PathVariable("org") String org, @PathVariable("project") String project) {
@@ -221,75 +143,55 @@ public class LocalController {
             @RequestParam(value = "limit", defaultValue = "100", required = false) int limit,
             @RequestParam(value = "cursor", defaultValue = "", required = false) String cursor) {
 
-        final ObjectsResponse objectsResponse = new ObjectsResponse();
-        int objectCount = whiteRavenObjectCountPerClass(clazz);
-        final ArrayList<RegObject> objects = new ArrayList<>(limit);
-
-        int beginIndex = 0;
-        if (cursor.trim().length()>0) beginIndex = Integer.parseInt(cursor);
-
-        while (beginIndex < objectCount && objects.size()<limit) {
-            objects.add(new RegObject("obj_"+beginIndex++, false, null, SIMPLE_DATE_FORMAT.format(new Date()), "", clazz, null));
-        }
-        if (beginIndex < objectCount) {
-            objectsResponse.setMeta(new Meta(cursor, ""+beginIndex, limit, null));
+        final OrgProj orgProj = new OrgProj(org, proj);
+        final List<RegObject> allObjects;
+        if (WhiteRaven.match(orgProj, env)) {
+            allObjects = WhiteRaven.getObjectsOfClass(orgProj, env, clazz);
         }
         else {
-            objectsResponse.setMeta(new Meta(cursor, null, limit, null));
+            allObjects = Collections.emptyList();
         }
-        objectsResponse.setObjects(objects);
+        final ArrayList<RegObject> objects = new ArrayList<>(limit);
+
+        final int startIndex = Paging.startIndex(cursor);
+        final int lastIndex = Paging.lastIndex(startIndex, limit, allObjects.size());
+        final List<RegObject> thisBulk = Paging.thisBulk(allObjects, startIndex, lastIndex);
+        final Meta meta = Paging.meta(limit, cursor, allObjects.size(), lastIndex);
+
+        final ObjectsResponse objectsResponse = new ObjectsResponse();
+        objectsResponse.setMeta(meta);
+        objectsResponse.setObjects(thisBulk);
         return objectsResponse;
     }
 
-    private static int whiteRavenObjectCountPerClass(String clazz) {
-        switch (clazz) {
-            case "class_1_1_dev_0":
-                return 26;
-            case "class_1_1_dev_1":
-                return 7;
-            case "class_1_1_dev_2":
-                return 8;
-            default:
-                return 0;
-        }
-    }
-
-    @GetMapping(value = "/projects", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ProjectsResponse getProjects(
+    @GetMapping(value = "/projects/{org}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ProjectsResponse getProjectsForOrg(
+            @PathVariable("org") String org,
             @RequestParam(value = "limit", defaultValue = "100", required = false) int limit,
             @RequestParam(value = "cursor", defaultValue = "", required = false) String cursor,
             @RequestHeader(name="X-Internal-Token", defaultValue="", required=false) String internalToken) {
 
-        log.debug("[getProjects] limit={} cursor={}", limit, cursor);
+        log.debug("[getProjectsForOrg] org={} limit={} cursor={}", org, limit, cursor);
         log.debug("X-Internal-Token: {}", internalToken);
 
+        if (WhiteRaven.invalidOrganization(org)) throw new IllegalArgumentException("Unrecognized organization: " + org);
+
         final ProjectsResponse projectsResponse = new ProjectsResponse();
-        final Meta meta = new Meta();
-        meta.setCursor(cursor);
-        meta.setLimit(limit);
 
-        int index;
-        if (cursor.isEmpty()) {
-            index = 0;
+
+        List<Project> allProjects;
+        if (WhiteRaven.matchOrganization(org)) {
+            allProjects = WhiteRaven.getProjectsForOrg(org);
         }
         else {
-            index = Integer.parseInt(cursor);
+            allProjects = Collections.emptyList();
         }
 
-        List<Project> projects = new ArrayList<>();
-        while (index< WHITE_RAVEN_PROJECTS.size() && projects.size()<limit) {
-            projects.add(WHITE_RAVEN_PROJECTS.get(index++));
-        }
-
-        projectsResponse.setProjects(projects);
-
-        if (index>= WHITE_RAVEN_PROJECTS.size()) {
-            meta.setNextCursor(null);
-        }
-        else {
-            meta.setNextCursor(""+index);
-        }
-
+        final int startIndex = Paging.startIndex(cursor);
+        final int lastIndex = Paging.lastIndex(startIndex, limit, allProjects.size());
+        final List<Project> thisBulk = Paging.thisBulk(allProjects, startIndex, lastIndex);
+        final Meta meta = Paging.meta(limit, cursor, allProjects.size(), lastIndex);
+        projectsResponse.setProjects(thisBulk);
         projectsResponse.setMeta(meta);
         return projectsResponse;
     }
@@ -303,6 +205,10 @@ public class LocalController {
         log.debug("[getProjects] org={} project={}", org, project);
         log.debug("X-Internal-Token: {}", internalToken);
 
+        if (WhiteRaven.invalidOrganization(org)) throw new IllegalArgumentException("Unrecognized organization: " + org);
+        if (WhiteRaven.invalidProject(project)) throw new IllegalArgumentException("Unrecognized project: " + project);
+
+
         final EnvironmentsResponse environmentsResponse = new EnvironmentsResponse();
         environmentsResponse.setDefault("prod");
         final ArrayList<Environment> environments = new ArrayList<>(2);
@@ -312,31 +218,43 @@ public class LocalController {
         return environmentsResponse;
     }
 
-    @ToString
-    @AllArgsConstructor
-    @Data
-    private static class Env {
-        private final String org;
-        private final String proj;
-        private final String env;
-        private final UUID uuid;
+    private static class Paging {
+        private static Meta meta(int limit, String cursor, int totalSize, int lastIndex) {
+            return new Meta(cursor, nextCursor(lastIndex, totalSize), limit, null);
+        }
 
-    }
+        private static int lastIndex(int startIndex, int bulkSize, int totalSize) {
+            return Math.min(startIndex+bulkSize-1, totalSize -1);
+        }
 
-    private static class UuidStore {
-        private static int nextIndex = 0;
-        private static List<UUID> inventar = init();
+        private static int startIndex(String cursor) {
+            final int startIndex;
+            if (cursor.isEmpty()) {
+                startIndex = 0;
+            }
+            else {
+                startIndex = Integer.parseInt(cursor);
+            }
+            return startIndex;
+        }
 
-        private static List<UUID> init() {
-            final ArrayList<UUID> res = new ArrayList<>(100);
-            for (int i = 1; i <= WHITE_RAVEN_ORG_COUNT*WHITE_RAVEN_PROJ_PER_ORG*2; i++) {
-                res.add( UUID.fromString("8fab5a7d-72e7-40ce-8d02-01fce3"+String.format("%06d", i)) );
+        private static <T> List<T> thisBulk(List<T> items, int startIndex, int lastIndex) {
+            final ArrayList<T> res = new ArrayList<>(lastIndex - startIndex + 1);
+            for (int i = startIndex; i <= lastIndex; i++) {
+                res.add(items.get(i));
             }
             return res;
         }
 
-        public static UUID next() {
-            return inventar.get(nextIndex++);
+        private static String nextCursor(int lastIndexProvided, int totalSize) {
+            final String nextCursor;
+            if (lastIndexProvided+1 < totalSize) {
+                nextCursor = "" + (lastIndexProvided + 1);
+            }
+            else {
+                nextCursor = null;
+            }
+            return nextCursor;
         }
     }
 }
