@@ -1,9 +1,12 @@
 package com.golan.hello.spring.boot.app;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.golan.hello.spring.iam.organizations.OrganizationsResponse;
 import com.golan.hello.spring.orchestration.environments.Environment;
 import com.golan.hello.spring.orchestration.environments.EnvironmentsResponse;
 import com.golan.hello.spring.orchestration.projects.Project;
 import com.golan.hello.spring.orchestration.projects.ProjectsResponse;
+import com.golan.hello.spring.orchestration.spec.UuidResponse;
 import com.golan.hello.spring.registry.Meta;
 import com.golan.hello.spring.registry.ObjectCount;
 import com.golan.hello.spring.registry.ObjectsResponse;
@@ -31,13 +34,6 @@ import java.util.UUID;
 @Slf4j
 public class LocalController {
 
-    private static final String ID_ORG_PROJ = "892daa98-e8dd-11e8-9f32-f2801f1b9fd1";
-    private static final String PS_ORG_PROJ = "{\"apiVersion\":0,\"classes\":{\"vehicle\":{\"name\":\"Vehicle\",\"streams\":{\"packetId\":{\"name\":\"PacketID\",\"type\":\"number\"},\"location\":{\"name\":\"Location\",\"type\":\"geopoint\"},\"deviceId\":{\"name\":\"DeviceID\",\"type\":\"integer\"},\"vin\":{\"name\":\"VIN\",\"type\":\"text\"},\"unixTime\":{\"name\":\"Unix Time\",\"type\":\"number\"},\"reasonCode\":{\"name\":\"Reason Code\",\"type\":\"number\"},\"heading\":{\"name\":\"Heading\",\"type\":\"number\"},\"hdop\":{\"name\":\"Hdop\",\"type\":\"number\"},\"numSats\":{\"name\":\"NumStats\",\"type\":\"number\"},\"vehicleBattVolts\":{\"name\":\"Vehicle Battery Volts\",\"type\":\"number\"},\"gpsLifetimeOdom\":{\"name\":\"GPS Lifetime Odom\",\"type\":\"number\"},\"packetSerialNumber\":{\"name\":\"Packet Serial Number\",\"type\":\"number\"},\"speed\":{\"name\":\"Speed\",\"type\":\"number\"},\"imei\":{\"name\":\"IMEI\",\"type\":\"number\"},\"dtcSize\":{\"name\":\"DTCSize\",\"type\":\"number\"},\"dtcArray\":{\"name\":\"DTCArray\",\"type\":\"number\"},\"acceleration\":{\"name\":\"Acceleration\",\"type\":\"number\"},\"deceleration\":{\"name\":\"Deceleration\",\"type\":\"number\"},\"crashPacketSize\":{\"name\":\"Crash Packet Size\",\"type\":\"number\"},\"crashPacket\":{\"name\":\"Crash Packet\",\"type\":\"number\"},\"idleTime\":{\"name\":\"Idle Time\",\"type\":\"number\"},\"rpm\":{\"name\":\"RPM\",\"type\":\"number\"},\"obdVehicleSpeed\":{\"name\":\"OBD Vehicle Speed\",\"type\":\"number\"},\"rawMessage\":{\"name\":\"Raw hex data from device\",\"type\":\"text\"},\"gpsSpeed\":{\"name\":\"GPS Speed\",\"type\":\"integer\"},\"wakeReason\":{\"name\":\"Wake Reason\",\"type\":\"number\"},\"mil\":{\"name\":\"MIL\",\"type\":\"integer\"},\"ecuCount\":{\"name\":\"ECU Count\",\"type\":\"integer\"},\"ecuID\":{\"name\":\"ECU ID\",\"type\":\"text\"},\"dtcCount\":{\"name\":\"DTC Count\",\"type\":\"integer\"},\"dtcCodes\":{\"name\":\"DTC Codes Object Array\",\"type\":\"text\"}},\"adapter\":{\"template\":\"custom-adapter\",\"publishTo\":\"telemetry\",\"count\":2}},\"error\":{\"name\":\"Error\",\"streams\":{\"message\":{\"name\":\"Message\",\"type\":\"text\"},\"code\":{\"name\":\"Code\",\"type\":\"text\"}}}},\"architecture\":{\"telemetry\":{\"type\":\"input\",\"name\":\"Telemetry\"},\"storage\":{\"type\":\"storage\",\"from\":[\"telemetry\",\"errors\"],\"name\":\"Data Storage\"},\"cartasiteEndpoint\":{\"type\":\"custom\",\"from\":[\"telemetry\"],\"config\":{\"count\":2,\"template\":\"custom-adapter\",\"properties\":{\"cartasiteUrl\":\"${CARTASITE_URL}\"}}},\"rawDatatoXirgo\":{\"type\":\"custom\",\"from\":[\"RawXirgoDataOnOff\"],\"comment\":\"This output is just the raw data so that Xirgo can troubleshoot several issuestwo.\",\"config\":{\"count\":2,\"template\":\"custom-adapter\"}},\"RawXirgoDataOnOff\":{\"type\":\"condition\",\"from\":[\"telemetry\"],\"config\":{\"conditions\":[{\"allOf\":[{\"data.unixTime\":[{\"eq\":\"0\"}]}]}]}},\"errors\":{\"type\":\"input\",\"name\":\"Errors\"}},\"services\":{\"importRegDevices\":{\"template\":\"custom-service\",\"count\":2}},\"env_uuid\":\"" + ID_ORG_PROJ + "\"}";
-    private static final String ID_NO_CLASSES = "43c81429-605c-43c9-a98e-0afc18f89bd0";
-    private static final String PS_NO_CLASSES = "{\"apiVersion\":0,\"classes\":{},\"env_uuid\":\"" + ID_NO_CLASSES + "\"}";
-    private static final String ID_NES_COWS = "fab3866e-39f9-4c24-b7d3-11ee2b56bc3b";
-    private static final String PS_NES_COWS = "{\"apiVersion\":0,\"organization\":\"nes\",\"identifier\":\"mc-expo\",\"env\":\"dev\",\"env_uuid\":\"" + ID_NES_COWS + "\",\"uuid\":\"" + ID_NES_COWS + "\",\"classes\":{\"cow\":{\"streams\":{\"location\":{\"name\":\"location\",\"comment\":\"GPS coordinates\",\"type\":\"geopoint\",\"uuid\":\"e026300a-43c4-41f9-a501-076e5637af16\"},\"x_axis\":{\"name\":\"x axis\",\"comment\":\"X orientation\",\"type\":\"number\",\"uuid\":\"da22d46d-f105-4be4-bcb1-8ca75ee2a825\"},\"speed\":{\"name\":\"speed\",\"comment\":\"X orientation\",\"type\":\"number\",\"uuid\":\"da22d46d-f105-4be4-bcb1-8ca75ee2a765\"},\"birthday\":{\"name\":\"birthday\",\"comment\":\"\",\"type\":\"timestamp\",\"uuid\":\"05920ccb-94d2-4781-a8df-ab3f4399b46e\"},\"name\":{\"name\":\"name\",\"comment\":\"cow name\",\"type\":\"text\",\"uuid\":\"c87b1406-75e3-409e-bbcb-3943c5d92ff8\"},\"health\":{\"name\":\"Health\",\"type\":\"integer\",\"comment\":\"\",\"uuid\":\"f1edbac5-3ddb-41a2-85d1-f1477b792ea1\"},\"escaped\":{\"name\":\"Escaped the fence\",\"type\":\"boolean\",\"comment\":\"\",\"uuid\":\"12c69520-efa2-4de5-b78d-9c1d44f82ec3\"}},\"name\":\"\",\"comment\":\"\",\"has\":{},\"hasMany\":{},\"objectProperties\":{},\"attributes\":{},\"events\":{},\"commands\":{},\"onCreate\":[],\"uuid\":\"afdda0d9-8494-4a71-8801-a1e831ca4879\"},\"farm\":{\"streams\":{\"weather\":{\"name\":\"Weather\",\"type\":\"text\",\"comment\":\"\",\"uuid\":\"bcdc4942-b9cc-4940-8858-3b6a657afaed\"}},\"name\":\"\",\"comment\":\"\",\"has\":{},\"hasMany\":{},\"objectProperties\":{},\"attributes\":{},\"events\":{},\"commands\":{},\"onCreate\":[],\"uuid\":\"b8c3d9f1-a364-46f5-aff2-2bab00eb2532\"},\"package\":{\"streams\":{\"contents\":\"text\",\"weight\":\"number\",\"volume\":\"number\"}},\"entity-adapter\":{\"adapter\":{\"publishTo\":\"input\",\"template\":\"custom-adapter\",\"properties\":{\"demo\":\"hell\"},\"count\":3,\"uuid\":\"3ccb5d26-33d2-417f-a9b7-e2058aaa62ca\",\"_changes\":{\"template\":false,\"count\":false,\"properties\":false}},\"name\":\"\",\"comment\":\"\",\"has\":{},\"hasMany\":{},\"objectProperties\":{},\"attributes\":{},\"streams\":{},\"events\":{},\"commands\":{},\"onCreate\":[],\"uuid\":\"5836c242-4889-4a7b-a09c-d49c8c997f15\"}},\"architecture\":{\"input\":{\"type\":\"input\"},\"storage\":{\"from\":\"input\"},\"geofence-violation\":{\"type\":\"condition\",\"from\":\"input\",\"config\":{\"conditions\":[{\"data.escaped\":2},{\"noneOf\":[{\"class\":\"enclosure\"}]},{\"anyOf\":[{\"data.z_axis\":[{\"lte\":-408}]},{\"data.z_axis\":[{\"gte\":-395}]},{\"data.x_axis\":[{\"lte\":-265}]},{\"data.x_axis\":[{\"gte\":-245}]}]}]}},\"geoSlackAlert\":{\"type\":\"slackOutput\",\"from\":\"geofence-violation\",\"config\":{\"webhookUrl\":\"https://hooks.slack.com/services/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\",\"text\":\":cow2: @namit @olga FYI - An animal has escaped a geofence: {{object}}\",\"channel\":\"#p1-hello-world\",\"iconEmoji\":\":cow2:\"}},\"geoWSNotification\":{\"type\":\"custom\",\"from\":\"geofence-violation\",\"config\":{\"template\":\"custom-component\"}},\"fireNotification\":{\"type\":\"custom\",\"from\":\"temperature-violation\",\"config\":{\"template\":\"custom-component\"}}},\"services\":{\"registry-service\":{\"template\":\"custom-adapter\",\"count\":2,\"properties\":{},\"uuid\":\"89d70c75-aed1-4e0d-900e-f0316827d008\",\"_changes\":{\"template\":false,\"count\":false,\"properties\":false}},\"geoWSNotification.component\":{\"template\":\"custom-component\",\"count\":2,\"properties\":{},\"comment\":\"\",\"uuid\":\"95ce1693-e87b-47f9-8fb6-8f970e9a2779\",\"_changes\":{\"template\":false,\"count\":false,\"properties\":false}},\"geoWSRestNotif.component\":{\"template\":\"custom-component\",\"count\":2,\"properties\":{},\"comment\":\"\",\"uuid\":\"4f74bc18-9e61-4524-be6f-fa10842b4304\",\"_changes\":{\"template\":false,\"count\":false,\"properties\":false}},\"fireNotification.component\":{\"template\":\"custom-component\",\"count\":2,\"properties\":{},\"comment\":\"\",\"uuid\":\"3fe112c0-2329-4d4b-9250-4622ac7ef2f1\",\"_changes\":{\"template\":false,\"count\":false,\"properties\":false}}},\"actions\":{},\"events\":{},\"revision\":\"412d0aaf5b1d31f72234b27a3b2093614fd90952\",\"deletions\":[]}";
-
     private static final String CLASS_VEHICLE = "vehicle";
     private static final String CLASS_ERROR = "error";
     private static final String CLASS_COW = "cow";
@@ -51,11 +47,11 @@ public class LocalController {
         final HashMap<String, ObjectCount> orgProj = new HashMap<>();
         orgProj.put(CLASS_VEHICLE, new ObjectCount(CLASS_VEHICLE, 12, null));
         orgProj.put(CLASS_ERROR, new ObjectCount(CLASS_ERROR, 9, null));
-        result.put(UUID.fromString(ID_ORG_PROJ), orgProj);
+        result.put(UUID.fromString(Dfql.ID_ORG_PROJ), orgProj);
 
-        result.put(UUID.fromString(ID_NES_COWS), Collections.singletonMap(CLASS_COW, new ObjectCount(CLASS_COW, 7, null)));
+        result.put(UUID.fromString(Dfql.ID_NES_COWS), Collections.singletonMap(CLASS_COW, new ObjectCount(CLASS_COW, 7, null)));
 
-        result.put(UUID.fromString(ID_NO_CLASSES), Collections.emptyMap());
+        result.put(UUID.fromString(Dfql.ID_NO_CLASSES), Collections.emptyMap());
 
         return result;
     }
@@ -96,17 +92,56 @@ public class LocalController {
         final String env = org + "_" + project;
         switch (env) {
             case "org_proj":
-                return PS_ORG_PROJ;
+                return Dfql.PS_ORG_PROJ;
             case "nes_cows":
-                return PS_NES_COWS;
+                return Dfql.PS_NES_COWS;
             case "no_classes":
-                return PS_NO_CLASSES;
+                return Dfql.PS_NO_CLASSES;
             default:
                 throw new IllegalArgumentException("No such env: " + env);
         }
     }
 
-    @SuppressWarnings("unused")
+    @GetMapping(value = "/projects/{org}/{project}/spec/revisions/latest/classes_structure", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getClassesStructure( @PathVariable("org") String organization,
+                                       @PathVariable("project") String project,
+                                       @RequestHeader(name="X-Internal-Token", defaultValue="", required=false) String internalToken) throws Exception {
+
+        log.debug("[getClassesStructure] organization={} project={}", organization, project);
+        log.debug("X-Internal-Token: {}", internalToken);
+
+        return WhiteRaven.classesStructure();
+
+    }
+
+    @GetMapping(value = "/environments/{org}/{project}/uuid", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getEnvUuid( @PathVariable("org") String organization,
+                              @PathVariable("project") String project,
+                              @RequestHeader(name="X-Internal-Token", defaultValue="", required=false) String internalToken) throws Exception {
+
+        log.debug("[getEnvUuid] organization={} project={} withEnv={}", organization, project);
+        log.debug("X-Internal-Token: {}", internalToken);
+
+        final String proj;
+        final String env;
+        if (project.contains("~")) {
+            final String[] split = project.split("~");
+            proj = split[0];
+            env = split[1];
+        }
+        else {
+            proj = project;
+            env = "prod";
+        }
+
+        final Env envObj = WhiteRaven.findEnvironment(organization, proj, env);
+
+        return new ObjectMapper()
+                .writeValueAsString(new UuidResponse(envObj.getUuid()));
+    }
+
+
+        @SuppressWarnings("unused")
     @GetMapping(value = "/objects/_/~{unv_uuid}/_count", produces = MediaType.APPLICATION_JSON_VALUE)
     public Collection<ObjectCount> countObjects(@PathVariable("unv_uuid") String envUuid) {
         log.debug("[countObjects] envUuid={}", envUuid);
@@ -132,6 +167,11 @@ public class LocalController {
         } else {
             return Collections.singletonList(objectCountPerClass.get(className));
         }
+    }
+
+    @GetMapping(value = "/organizations")
+    public OrganizationsResponse getOrganizations() {
+        return new OrganizationsResponse(new Meta(), WhiteRaven.getAllOrganizations());
     }
 
     @GetMapping(value = "/objects/{org}/{proj}~{env}/{clazz}", produces = MediaType.APPLICATION_JSON_VALUE)

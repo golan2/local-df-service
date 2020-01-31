@@ -2,7 +2,9 @@ package com.golan.hello.spring.boot.app;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.golan.hello.spring.iam.organizations.Organization;
 import com.golan.hello.spring.orchestration.projects.Project;
+import com.golan.hello.spring.orchestration.spec.ClassesStructureResponse;
 import com.golan.hello.spring.orchestration.spec.ProjectSpec;
 import com.golan.hello.spring.registry.RegObject;
 import lombok.extern.slf4j.Slf4j;
@@ -88,8 +90,9 @@ class WhiteRaven {
     static Env findEnvironment(String org, String proj, String env) {
         if (invalidOrganization(org)) return null;
         if (invalidProject(proj)) return null;
-        return ENVIRONMENTS
-                .get(new OrgProj(org, proj))
+        final List<Env> envList = ENVIRONMENTS.get(new OrgProj(org, proj));
+        if (envList==null) return null;
+        return envList
                 .stream()
                 .filter(e -> e.getEnv().equals(env) )
                 .findAny()
@@ -110,6 +113,18 @@ class WhiteRaven {
                 .writeValueAsString(
                         new ProjectSpec(env.getUuid().toString(), null, classes)
                 );
+    }
+
+    static String classesStructure() throws JsonProcessingException {
+        Map<String, ClassesStructureResponse.Class> classes = new HashMap<>();
+        for (int i = 0; i < 3; i++) {
+            final String className = className(i);
+            classes.put(className, new ClassesStructureResponse.Class(className));
+        }
+        return new ObjectMapper()
+                .writeValueAsString(new ClassesStructureResponse(classes));
+
+
     }
 
     static boolean match(OrgProj orgProj, String env) {
@@ -175,6 +190,14 @@ class WhiteRaven {
     @SuppressWarnings("unused")
     static int getProjectCountForOrg(String org) {
         return PROJ_COUNT_PER_ORG;
+    }
+
+    static ArrayList<Organization> getAllOrganizations() {
+        final ArrayList<Organization> res = new ArrayList<>();
+        for (int i = 0; i < ORG_COUNT; i++) {
+            res.add( new Organization( organizationName(i), organizationName(i) ) );
+        }
+        return res;
     }
 
     private static class UuidStore {
