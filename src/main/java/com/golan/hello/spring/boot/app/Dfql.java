@@ -61,6 +61,18 @@ class Dfql {
             "          \"name\": \"Speed\",\n" +
             "          \"type\": \"number\"\n" +
             "        },\n" +
+            "        \"speed2\": {\n" +
+            "          \"name\": \"Speed\",\n" +
+            "          \"type\": \"number\"\n" +
+            "        },\n" +
+            "        \"speed3\": {\n" +
+            "          \"name\": \"Speed\",\n" +
+            "          \"type\": \"number\"\n" +
+            "        },\n" +
+            "        \"speed4\": {\n" +
+            "          \"name\": \"Speed\",\n" +
+            "          \"type\": \"number\"\n" +
+            "        },\n" +
             "        \"slow\": {\n" +
             "          \"name\": \"Slow\",\n" +
             "          \"type\": \"number\"\n" +
