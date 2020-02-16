@@ -64,21 +64,8 @@ public class LocalController {
                                        @RequestParam("with_env_uuid") String with_env_uuid,
                                        @RequestHeader(name="X-Internal-Token", defaultValue="", required=false) String internalToken) throws Exception {
         log.debug("[getLatestProjectSpec] organization={} project={} withEnv={}", organization, project, with_env_uuid);
-        log.debug("X-Internal-Token: {}", internalToken);
 
-        final String proj;
-        final String env;
-        if (project.contains("~")) {
-            final String[] split = project.split("~");
-            proj = split[0];
-            env = split[1];
-        }
-        else {
-            proj = project;
-            env = "prod";
-        }
-
-        final Env envObj = WhiteRaven.findEnvironment(organization, proj, env);
+        final Env envObj = WhiteRaven.findEnvironment(organization, project);
 
         if (envObj != null ) {
             return WhiteRaven.projectSpecForWhiteRaven(envObj);
@@ -119,25 +106,13 @@ public class LocalController {
                               @PathVariable("project") String project,
                               @RequestHeader(name="X-Internal-Token", defaultValue="", required=false) String internalToken) throws Exception {
 
-        log.debug("[getEnvUuid] organization={} project={} withEnv={}", organization, project);
+        log.debug("[getEnvUuid] organization={} project={}", organization, project);
         log.debug("X-Internal-Token: {}", internalToken);
 
-        final String proj;
-        final String env;
-        if (project.contains("~")) {
-            final String[] split = project.split("~");
-            proj = split[0];
-            env = split[1];
-        }
-        else {
-            proj = project;
-            env = "prod";
-        }
+        final Env envObj = WhiteRaven.findEnvironment(organization, project);
 
-        final Env envObj = WhiteRaven.findEnvironment(organization, proj, env);
-
-        return new ObjectMapper()
-                .writeValueAsString(new UuidResponse(envObj.getUuid()));
+        if (envObj==null) return null;
+        return new ObjectMapper().writeValueAsString(new UuidResponse(envObj.getUuid()));
     }
 
 
@@ -258,43 +233,4 @@ public class LocalController {
         return environmentsResponse;
     }
 
-    private static class Paging {
-        private static Meta meta(int limit, String cursor, int totalSize, int lastIndex) {
-            return new Meta(cursor, nextCursor(lastIndex, totalSize), limit, null);
-        }
-
-        private static int lastIndex(int startIndex, int bulkSize, int totalSize) {
-            return Math.min(startIndex+bulkSize-1, totalSize -1);
-        }
-
-        private static int startIndex(String cursor) {
-            final int startIndex;
-            if (cursor.isEmpty()) {
-                startIndex = 0;
-            }
-            else {
-                startIndex = Integer.parseInt(cursor);
-            }
-            return startIndex;
-        }
-
-        private static <T> List<T> thisBulk(List<T> items, int startIndex, int lastIndex) {
-            final ArrayList<T> res = new ArrayList<>(lastIndex - startIndex + 1);
-            for (int i = startIndex; i <= lastIndex; i++) {
-                res.add(items.get(i));
-            }
-            return res;
-        }
-
-        private static String nextCursor(int lastIndexProvided, int totalSize) {
-            final String nextCursor;
-            if (lastIndexProvided+1 < totalSize) {
-                nextCursor = "" + (lastIndexProvided + 1);
-            }
-            else {
-                nextCursor = null;
-            }
-            return nextCursor;
-        }
-    }
 }

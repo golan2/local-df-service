@@ -87,10 +87,23 @@ class WhiteRaven {
         }).collect(Collectors.toList());
     }
 
-    static Env findEnvironment(String org, String proj, String env) {
-        if (invalidOrganization(org)) return null;
+    static Env findEnvironment(String organization, String project) {
+        if (invalidOrganization(organization)) return null;
+
+        final String proj;
+        final String env;
+        if (project.contains("~")) {
+            final String[] split = project.split("~");
+            proj = split[0];
+            env = split[1];
+        }
+        else {
+            proj = project;
+            env = "prod";
+        }
+
         if (invalidProject(proj)) return null;
-        final List<Env> envList = ENVIRONMENTS.get(new OrgProj(org, proj));
+        final List<Env> envList = ENVIRONMENTS.get(new OrgProj(organization, proj));
         if (envList==null) return null;
         return envList
                 .stream()
