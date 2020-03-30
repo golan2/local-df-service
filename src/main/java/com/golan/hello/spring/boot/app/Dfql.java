@@ -2,6 +2,7 @@ package com.golan.hello.spring.boot.app;
 
 class Dfql {
     static final String ID_ORG_PROJ = "892daa98-e8dd-11e8-9f32-f2801f1b9fd1";
+
     static final String PS_ORG_PROJ = "" +
             "{\n" +
             "  \"apiVersion\": 0,\n" +
@@ -169,6 +170,19 @@ class Dfql {
             "        }\n" +
             "      }\n" +
             "    },\n" +
+            "    \"reserved\": {\n" +
+            "      \"name\": \"reserved\",\n" +
+            "      \"streams\": {\n" +
+            "        \"timestamp\": {\n" +
+            "          \"name\": \"timestamp\",\n" +
+            "          \"type\": \"NUMBER\"\n" +
+            "        },\n" +
+            "        \"object_id\": {\n" +
+            "          \"name\": \"object_id\",\n" +
+            "          \"type\": \"text\"\n" +
+            "        }\n" +
+            "      }\n" +
+            "    },\n" +
             "    \"drone\": {\n" +
             "      \"name\": \"drone\",\n" +
             "      \"streams\": {\n" +
@@ -187,6 +201,10 @@ class Dfql {
             "        \"status_code\": {\n" +
             "          \"name\": \"status_code\",\n" +
             "          \"type\": \"integer\"\n" +
+            "        },\n" +
+            "        \"from\": {\n" +
+            "          \"name\": \"from\",\n" +
+            "          \"type\": \"timestamp\"\n" +
             "        },\n" +
             "        \"check_time\": {\n" +
             "          \"name\": \"check_time\",\n" +
@@ -595,4 +613,251 @@ class Dfql {
             "  ]\n" +
             "}";
 
+
+    static final String PS_MORMONT_SHAYBA = "" +
+            "{\n" +
+            "  \"apiVersion\": 0,\n" +
+            "  \"classes\": {\n" +
+            "    \"drone\": {\n" +
+            "      \"streams\": {\n" +
+            "        \"speed\": {\n" +
+            "          \"type\": \"number\"\n" +
+            "        },\n" +
+            "        \"location\": {\n" +
+            "          \"type\": \"geopoint\"\n" +
+            "        },\n" +
+            "        \"message\": {\n" +
+            "          \"type\": \"text\"\n" +
+            "        },\n" +
+            "        \"fast\": {\n" +
+            "          \"type\": \"number\"\n" +
+            "        },\n" +
+            "        \"slow\": {\n" +
+            "          \"type\": \"number\"\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"events\": {\n" +
+            "        \"speed2high\": {\n" +
+            "          \"data\": {\n" +
+            "            \"speed\": {\n" +
+            "              \"type\": \"number\"\n" +
+            "            }\n" +
+            "          }\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"adapter\": {\n" +
+            "        \"template\": \"custom-adapter\",\n" +
+            "        \"publishTo\": \"input\",\n" +
+            "        \"count\": 1\n" +
+            "      }\n" +
+            "    },\n" +
+            "    \"izik\": {\n" +
+            "      \"streams\": {\n" +
+            "        \"speed\": {\n" +
+            "          \"type\": \"number\"\n" +
+            "        },\n" +
+            "        \"where_i_am\": {\n" +
+            "          \"type\": \"geopoint\"\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"adapter\": {\n" +
+            "        \"template\": \"custom-adapter\",\n" +
+            "        \"publishTo\": \"input\",\n" +
+            "        \"count\": 2\n" +
+            "      }\n" +
+            "    },\n" +
+            "    \"reserved\": {\n" +
+            "      \"streams\": {\n" +
+            "        \"timestamp\": {\n" +
+            "          \"type\": \"number\"\n" +
+            "        },\n" +
+            "        \"object_id\": {\n" +
+            "          \"type\": \"text\"\n" +
+            "        }\n" +
+            "      }\n" +
+            "    }\n" +
+            "  },\n" +
+            "  \"architecture\": {\n" +
+            "    \"input\": {\n" +
+            "      \"type\": \"input\"\n" +
+            "    },\n" +
+            "    \"storage\": {\n" +
+            "      \"type\": \"storage\",\n" +
+            "      \"from\": [\n" +
+            "        \"input\"\n" +
+            "      ]\n" +
+            "    }\n" +
+            "  },\n" +
+            "  \"env_uuid\": \"aea50ab6-32db-11ea-977e-29d880279c99\"\n" +
+            "}";
+    static final String CS_MORMONT_SHAYBA = "" +
+            "{\n" +
+            "  \"apiVersion\": 0,\n" +
+            "  \"classes\": {\n" +
+            "    \"drone\": {\n" +
+            "      \"streams\": {\n" +
+            "        \"speed\": {\n" +
+            "          \"type\": \"number\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"6af5cbdc-7fda-426d-b9fc-c7d59d86527c\"\n" +
+            "        },\n" +
+            "        \"location\": {\n" +
+            "          \"type\": \"geopoint\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"98bcd4b8-f6e8-4dc4-be12-00bcd15ae58f\"\n" +
+            "        },\n" +
+            "        \"message\": {\n" +
+            "          \"type\": \"text\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"80707908-c8ff-4779-a0da-d26bcd11c390\"\n" +
+            "        },\n" +
+            "        \"fast\": {\n" +
+            "          \"type\": \"number\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"ebe85315-2eed-456e-a2fd-cb03a9926556\"\n" +
+            "        },\n" +
+            "        \"slow\": {\n" +
+            "          \"type\": \"number\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"71b902ae-df7c-4bcb-8d97-995754fd9b69\"\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"events\": {\n" +
+            "        \"speed2high\": {\n" +
+            "          \"data\": {\n" +
+            "            \"speed\": {\n" +
+            "              \"type\": \"number\",\n" +
+            "              \"name\": \"\",\n" +
+            "              \"comment\": \"\",\n" +
+            "              \"uuid\": \"51b535f6-6745-4e4d-82a7-2cbbdc231980\"\n" +
+            "            }\n" +
+            "          },\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"1f958630-af8e-45cc-abf6-d736513e60d4\"\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"adapter\": {\n" +
+            "        \"template\": \"custom-adapter\",\n" +
+            "        \"publishTo\": \"input\",\n" +
+            "        \"count\": 1,\n" +
+            "        \"properties\": {},\n" +
+            "        \"uuid\": \"548f05a8-d5ac-43e8-8151-eff9ec2a5a7d\",\n" +
+            "        \"_changes\": {\n" +
+            "          \"template\": false,\n" +
+            "          \"count\": false,\n" +
+            "          \"properties\": false\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"name\": \"\",\n" +
+            "      \"comment\": \"\",\n" +
+            "      \"has\": {},\n" +
+            "      \"hasMany\": {},\n" +
+            "      \"objectProperties\": {},\n" +
+            "      \"attributes\": {},\n" +
+            "      \"commands\": {},\n" +
+            "      \"onCreate\": [],\n" +
+            "      \"uuid\": \"ae80f688-fca2-467c-8605-86d367c9640c\"\n" +
+            "    },\n" +
+            "    \"izik\": {\n" +
+            "      \"streams\": {\n" +
+            "        \"speed\": {\n" +
+            "          \"type\": \"number\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"b3869369-4740-477c-9bc9-33be3f2fdc49\"\n" +
+            "        },\n" +
+            "        \"where_i_am\": {\n" +
+            "          \"type\": \"geopoint\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"3bf772b3-0bd2-4293-8de5-23ad9db3dc11\"\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"adapter\": {\n" +
+            "        \"template\": \"custom-adapter\",\n" +
+            "        \"publishTo\": \"input\",\n" +
+            "        \"count\": 2,\n" +
+            "        \"properties\": {},\n" +
+            "        \"uuid\": \"7d64b8e8-9e15-4e4c-af3d-402935d04620\",\n" +
+            "        \"_changes\": {\n" +
+            "          \"template\": false,\n" +
+            "          \"count\": false,\n" +
+            "          \"properties\": false\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"name\": \"\",\n" +
+            "      \"comment\": \"\",\n" +
+            "      \"has\": {},\n" +
+            "      \"hasMany\": {},\n" +
+            "      \"objectProperties\": {},\n" +
+            "      \"attributes\": {},\n" +
+            "      \"events\": {},\n" +
+            "      \"commands\": {},\n" +
+            "      \"onCreate\": [],\n" +
+            "      \"uuid\": \"7ed73da1-9457-476e-8e61-e185c5d1dbb0\"\n" +
+            "    },\n" +
+            "    \"reserved\": {\n" +
+            "      \"streams\": {\n" +
+            "        \"timestamp\": {\n" +
+            "          \"type\": \"number\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"96fce606-663d-45b1-a342-5297d19ab567\"\n" +
+            "        },\n" +
+            "        \"object_id\": {\n" +
+            "          \"type\": \"text\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"56f91abb-76a2-4626-85b3-3a4e64557881\"\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"name\": \"\",\n" +
+            "      \"comment\": \"\",\n" +
+            "      \"has\": {},\n" +
+            "      \"hasMany\": {},\n" +
+            "      \"objectProperties\": {},\n" +
+            "      \"attributes\": {},\n" +
+            "      \"events\": {},\n" +
+            "      \"commands\": {},\n" +
+            "      \"onCreate\": [],\n" +
+            "      \"uuid\": \"8a24f45e-06c3-4c55-a3fe-2aabdbce4627\"\n" +
+            "    }\n" +
+            "  },\n" +
+            "  \"architecture\": {\n" +
+            "    \"input\": {\n" +
+            "      \"type\": \"input\",\n" +
+            "      \"name\": \"\",\n" +
+            "      \"comment\": \"\",\n" +
+            "      \"config\": {},\n" +
+            "      \"from\": [],\n" +
+            "      \"to\": [\n" +
+            "        \"storage\"\n" +
+            "      ]\n" +
+            "    },\n" +
+            "    \"storage\": {\n" +
+            "      \"type\": \"storage\",\n" +
+            "      \"from\": [\n" +
+            "        \"input\"\n" +
+            "      ],\n" +
+            "      \"name\": \"\",\n" +
+            "      \"comment\": \"\",\n" +
+            "      \"config\": {},\n" +
+            "      \"to\": []\n" +
+            "    }\n" +
+            "  },\n" +
+            "  \"services\": {},\n" +
+            "  \"uuid\": \"aea509bc-32db-11ea-977e-29d880279c99\",\n" +
+            "  \"env_uuid\": \"aea50ab6-32db-11ea-977e-29d880279c99\",\n" +
+            "  \"organization\": \"mormont\",\n" +
+            "  \"identifier\": \"shayba\",\n" +
+            "  \"env\": \"dev\",\n" +
+            "  \"revision\": \"470230d5a568a353585033e6aa06d1e6d43ad4ab\",\n" +
+            "  \"deletions\": []\n" +
+            "}";
 }

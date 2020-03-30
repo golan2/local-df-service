@@ -1,17 +1,16 @@
 package com.golan.hello.spring.boot.app;
 
 
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
+@SuppressWarnings("unused")
 @RequestMapping("/query")
 @RestController
 @Slf4j
@@ -32,44 +31,48 @@ public class NeoController {
     }
 
     @GetMapping(value = "/counters/overtime/singleval")
-    SingleValueChart getCountersPerClassSingleValue(
-            @RequestParam("env_uuid") UUID envUuid,
-            @RequestParam("entity") EntityType entity,
-            @RequestParam("device_type")String deviceType,
-            @RequestParam("aggregateFunction") AggregationFunction aggregateFunction,
-            @RequestParam("from")String from,
-            @RequestParam("to")String to) {
+    SingleValueChart getCountersPerClassSingleValue(@RequestParam("env_uuid") UUID envUuid,
+                                                    @RequestParam("entity") EntityType entity,
+                                                    @RequestParam("device_type")String deviceType,
+                                                    @RequestParam("aggregateFunction") AggregationFunction aggregateFunction,
+                                                    @RequestParam("from")String from,
+                                                    @RequestParam("to")String to) {
 
-        log.info("envUuid=[{}] entity=[{}] deviceType=[{}] aggregateFunction=[{}] from=[{}] to=[{}] ", envUuid, entity, deviceType, aggregateFunction, from, to);
+        log.info("~~~~~~~  |getCountersPerClassSingleValue| envUuid=[{}] entity=[{}] deviceType=[{}] aggregateFunction=[{}] from=[{}] to=[{}] ", envUuid, entity, deviceType, aggregateFunction, from, to);
 
-        return new SingleValueChart(100, "abc");
+
+        if (EntityType.MESSAGES.equals(entity))
+            return new SingleValueChart(100.0, "Transactions");
+        else if (EntityType.VOLUME_SIZE.equals(entity))
+            return new SingleValueChart(200.0, "Volume Size");
+        else
+            throw new IllegalArgumentException("Unsupported Entity: " + entity);
     }
 
+    @GetMapping(value = "/counters")
+    SingleValueChart getCountersSingleValue(@RequestParam("org_bucket")String orgBucket,
+                                   @RequestParam("project_bucket")String projBucket,
+                                   @RequestParam("org_id")String org,
+                                   @RequestParam("project_id")String project,
+                                   @RequestParam("environment")String env,
+                                   @RequestParam("entity") EntityType entity,
+                                   @RequestParam("device_type")String deviceType,
+                                   @RequestParam("aggregateFunction") AggregationFunction aggregateFunction,
+                                   @RequestParam("from")String from,
+                                   @RequestParam("to")String to) {
+        log.info("~~~~~~~  |getCountersSingleValue| orgBucket=[{}] projBucket=[{}] org=[{}] project=[{}] env=[{}] entity=[{}] deviceType=[{}] aggregateFunction=[{}] from=[{}] to=[{}] ",
+                orgBucket, projBucket, org, project, env, entity, deviceType, aggregateFunction, from, to);
 
-
-
-    public static class SingleValueChart {
-
-        private Number data;
-        private String key;
-
-        public SingleValueChart() {
-        }
-
-        public SingleValueChart(Number data, String key) {
-            this.data = data;
-            this.key = key;
-        }
-
-        public Number getData() {
-            return data;
-        }
-
-        public String getKey() {
-            return key;
-        }
+        if (EntityType.COUNT_DISTINCT_DEVICE.equals(entity))
+            return new SingleValueChart(80, "Distinct Active Objects");
+        else
+            throw new IllegalArgumentException("Unsupported Entity: " + entity);
     }
 
-
+    @Data
+    private static class SingleValueChart {
+        private final Number data;
+        private final String key;
+    }
 
 }
