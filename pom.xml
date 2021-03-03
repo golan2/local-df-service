@@ -95,6 +95,27 @@
                         </executions>
                     </plugin>
 
+                    <plugin>
+                        <groupId>com.googlecode.maven-download-plugin</groupId>
+                        <artifactId>download-maven-plugin</artifactId>
+                        <version>1.6.0</version>
+                        <executions>
+                            <execution>
+                                <id>download-azure-java-agent-3</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>wget</goal>
+                                </goals>
+                                <configuration>
+                                    <url>https://github.com/microsoft/ApplicationInsights-Java/releases/download/3.0.0-PREVIEW.4/applicationinsights-agent-3.0.0-PREVIEW.4.jar</url>
+                                    <unpack>false</unpack>
+                                    <outputDirectory>${project.build.directory}/azure</outputDirectory>
+                                    <outputFileName>applicationinsights-agent-3.jar</outputFileName>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
 
 
                 </plugins>

@@ -3,6 +3,8 @@ package com.golan.local.dataflow.data;
 public class Dfql {
     public static final String ID_ORG_PROJ = "892daa98-e8dd-11e8-9f32-f2801f1b9fd1";
     public static final String ID_SHAYBA_DEV = "aea50ab6-32db-11ea-977e-29d880279c99";
+    public static final String ORG = "mormont";
+    public static final String PROJ = "shayba";
 
     public static final String PS_ORG_PROJ = "" +
             "{\n" +
@@ -901,8 +903,8 @@ public class Dfql {
             "  \"services\": {},\n" +
             "  \"uuid\": \"aea509bc-32db-11ea-977e-29d880279c99\",\n" +
             "  \"env_uuid\": \"aea50ab6-32db-11ea-977e-29d880279c99\",\n" +
-            "  \"organization\": \"mormont\",\n" +
-            "  \"identifier\": \"shayba\",\n" +
+            "  \"organization\": \"" + ORG + "\",\n" +
+            "  \"identifier\": \"" + PROJ + "\",\n" +
             "  \"env\": \"dev\",\n" +
             "  \"revision\": \"08d0b7069d491cb764a65242c5d55412f3f431ba\",\n" +
             "  \"deletions\": []\n" +

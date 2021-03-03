@@ -7,7 +7,7 @@ server:
 data:
   environment:
     # Load   WhiteRaven  DFQL
-    name: "Load"
+    name: "WhiteRaven"
 
 logging:
   pattern:

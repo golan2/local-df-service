@@ -3,6 +3,7 @@ package com.golan.local.dataflow.controllers;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.golan.local.dataflow.data.Dfql;
 import com.golan.local.dataflow.data.Env;
+import com.golan.local.dataflow.data.Fleet;
 import com.golan.local.dataflow.data.WhiteRaven;
 import com.golan.local.dataflow.json.iam.organizations.OrganizationsResponse;
 import com.golan.local.dataflow.json.kong.Consumer;
@@ -38,6 +39,14 @@ public class LocalController {
 
     @Value("${data.environment.name}")
     private String envName;
+
+    private int counter;
+
+    @GetMapping(value = "v1/tps")
+    public boolean getTps() {
+        log.debug("getTps {}", ++counter);
+        return true;
+    }
 
 
     @GetMapping(value = "v1/organizations")
@@ -89,6 +98,20 @@ public class LocalController {
 
     //   /v1/projects
 
+
+    @GetMapping(value = "v1/projects/{envUuid}/_/spec/revisions/latest/compiled", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getLatestCompiledSpecInternal(@PathVariable("envUuid") String envUuid,
+                                                @RequestHeader(name = "X-Internal-Token", defaultValue = "", required = false) String internalToken) {
+        log.debug("~~~[getLatestCompiledSpecInternal] envUuid={}", envUuid);
+
+        if (Dfql.ID_SHAYBA_DEV.equalsIgnoreCase(envUuid)) {
+            return getLatestCompiledSpec("mormont", "shayba~dev", internalToken);
+        }
+        else {
+            throw new IllegalArgumentException("Unrecognized envUuid: " + envUuid);
+        }
+    }
+
     @SuppressWarnings("unused")
     @GetMapping(value = "v1/projects/{org}/{project}/spec/revisions/latest/compiled", produces = MediaType.APPLICATION_JSON_VALUE)
     public String getLatestCompiledSpec(@PathVariable("org") String organization,
@@ -102,6 +125,11 @@ public class LocalController {
             case "mormont/shayba~dev":
             case "mormont/shayba~prod":
                 return Dfql.CS_MORMONT_SHAYBA;
+            case "fleet/fleet-trucks-iot~dev":
+                return Fleet.COMPILED_SPEC_DEV;
+            case "fleet/fleet-trucks-iot":
+            case "fleet/fleet-trucks-iot~prod":
+                return Fleet.COMPILED_SPEC_PROD;
             default:
                 throw new IllegalArgumentException("Unrecognized project: " + orgProj);
 
@@ -110,12 +138,18 @@ public class LocalController {
 
     ///v1/projects/_/~aea50ab6-32db-11ea-977e-29d880279c99/spec/revisions/470230d5a568a353585033e6aa06d1e6d43ad4ab/source.json
     @GetMapping(value = "v1/projects/_/~{envUuid}/spec/revisions/{revision}/source.json", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String getRevisionProjectSpec(@PathVariable("envUuid") String envUuid,
-                                          @PathVariable("revision") String revision,
-                                          @RequestHeader(name = "X-Internal-Token", defaultValue = "", required = false) String internalToken) throws Exception {
-        log.debug("~~~[getRevisionProjectSpec] envUuid={} revision={}", envUuid, revision);
+    public String getRevisionProjectSpecInternal(@PathVariable("envUuid") String envUuid,
+                                         @PathVariable("revision") String revision,
+                                         @RequestHeader(name = "X-Internal-Token", defaultValue = "", required = false) String internalToken) throws Exception {
+        log.debug("~~~[getRevisionProjectSpecInternal] envUuid={} revision={}", envUuid, revision);
         if (Dfql.ID_SHAYBA_DEV.equalsIgnoreCase(envUuid)) {
-            return getLatestProjectSpec("mormont", "shayba", "", internalToken);
+            return getLatestProjectSpec(Dfql.ORG, Dfql.PROJ, revision, "", internalToken);
+        }
+        else if (Fleet.ENV_DEV.equalsIgnoreCase(envUuid)) {
+            return getLatestProjectSpec(Fleet.ORG, Fleet.PROJ, revision, "", internalToken);
+        }
+        else if (Fleet.ENV_PROD.equalsIgnoreCase(envUuid)) {
+            return getLatestProjectSpec(Fleet.ORG, Fleet.PROJ, revision, "", internalToken);
         }
         else {
             throw new IllegalArgumentException("Unsupported ENVUUID: " + envUuid);
@@ -123,39 +157,27 @@ public class LocalController {
 
     }
 
-    @GetMapping(value = "v1/projects/{envUuid}/_/spec/revisions/latest/compiled", produces = MediaType.APPLICATION_JSON_VALUE)
-    public String getLatestCompiledSpec(@PathVariable("envUuid") String envUuid,
-                                        @RequestHeader(name = "X-Internal-Token", defaultValue = "", required = false) String internalToken) {
-        log.debug("~~~[getLatestCompiledSpec] envUuid={}", envUuid);
-
-        if (Dfql.ID_SHAYBA_DEV.equalsIgnoreCase(envUuid)) {
-            return getLatestCompiledSpec("mormont", "shayba~dev", internalToken);
-        }
-        else {
-            throw new IllegalArgumentException("Unrecognized envUuid: " + envUuid);
-        }
-    }
-
     @SuppressWarnings("unused")
-    @GetMapping(value = "v1/projects/{org}/{project}/spec/revisions/latest/source.json", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "v1/projects/{org}/{project}/spec/revisions/{revision}/source.json", produces = MediaType.APPLICATION_JSON_VALUE)
     public String getLatestProjectSpec(@PathVariable("org") String organization,
                                        @PathVariable("project") String project,
+                                       @PathVariable("revision") String revision,
                                        @RequestParam("with_env_uuid") String with_env_uuid,
                                        @RequestHeader(name = "X-Internal-Token", defaultValue = "", required = false) String internalToken) throws Exception {
-        log.debug("~~~[getLatestProjectSpec] organization={} project={} withEnv={}", organization, project, with_env_uuid);
+        log.debug("~~~[getLatestProjectSpec] organization={} project={} revision={} withEnv={}", organization, project, revision, with_env_uuid);
 
         final Env envObj = WhiteRaven.findEnvironment(organization, project);
 
         if (envObj != null) {
             return WhiteRaven.projectSpecForWhiteRaven(envObj);
         } else {
-            return projectSpecForDfql(organization, project);
+            return projectSpecForOtherUsages(organization, project);
         }
     }
 
 
-    private String projectSpecForDfql(@PathVariable("org") String org, @PathVariable("project") String project) {
-        log.debug("~~~[projectSpecForDfql] organization={} project={}", org, project);
+    private String projectSpecForOtherUsages(@PathVariable("org") String org, @PathVariable("project") String project) {
+        log.debug("~~~[projectSpecForOtherUsages] organization={} project={}", org, project);
         final String env = org + "/" + project;
 
         switch (env) {
@@ -169,6 +191,10 @@ public class LocalController {
             case "mormont/shayba~dev":
             case "mormont/shayba~prod":
                 return Dfql.PS_MORMONT_SHAYBA;
+            case "fleet/fleet-trucks-iot~dev":
+            case "fleet/fleet-trucks-iot":
+            case "fleet/fleet-trucks-iot~prod":
+                return Fleet.PROJECT_SPEC;
             default:
                 throw new IllegalArgumentException("No such env: " + env);
         }
@@ -197,10 +223,17 @@ public class LocalController {
         log.debug("~~~[getEnvUuid] organization={} project={}", organization, project);
         log.debug("X-Internal-Token: {}", internalToken);
 
-        final Env envObj = WhiteRaven.findEnvironment(organization, project);
+        final Env white = WhiteRaven.findEnvironment(organization, project);
+        if (white != null) {
+            return new ObjectMapper().writeValueAsString(new UuidResponse(white.getUuid()));
+        }
 
-        if (envObj == null) return null;
-        return new ObjectMapper().writeValueAsString(new UuidResponse(envObj.getUuid()));
+        final Env fleet = Fleet.findEnvironment(organization, project);
+        if (fleet != null) {
+            return new ObjectMapper().writeValueAsString(new UuidResponse(fleet.getUuid()));
+        }
+
+        return null;
     }
 
     @GetMapping(value = "v1/environments/{org}/{project}", produces = MediaType.APPLICATION_JSON_VALUE)
