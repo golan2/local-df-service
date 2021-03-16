@@ -1,10 +1,12 @@
 package com.golan.local.dataflow.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.golan.local.dataflow.authentication.InternalApi;
 import com.golan.local.dataflow.data.Dfql;
 import com.golan.local.dataflow.data.Env;
 import com.golan.local.dataflow.data.Fleet;
 import com.golan.local.dataflow.data.WhiteRaven;
+import com.golan.local.dataflow.data.registry.Shayba;
 import com.golan.local.dataflow.json.iam.organizations.OrganizationsResponse;
 import com.golan.local.dataflow.json.kong.Consumer;
 import com.golan.local.dataflow.json.orchestration.environments.Environment;
@@ -17,6 +19,7 @@ import com.golan.local.dataflow.json.Meta;
 import com.golan.local.dataflow.json.Paging;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,6 +38,7 @@ import java.util.UUID;
 @RequestMapping("/")
 @RestController
 @Slf4j
+@InternalApi
 public class LocalController {
 
     @Value("${data.environment.name}")
@@ -104,8 +108,14 @@ public class LocalController {
                                                 @RequestHeader(name = "X-Internal-Token", defaultValue = "", required = false) String internalToken) {
         log.debug("~~~[getLatestCompiledSpecInternal] envUuid={}", envUuid);
 
-        if (Dfql.ID_SHAYBA_DEV.equalsIgnoreCase(envUuid)) {
-            return getLatestCompiledSpec("mormont", "shayba~dev", internalToken);
+        if (Shayba.ENV_UUID_MORMONT_SHAYBA_DEV.equalsIgnoreCase(envUuid)) {
+            return getLatestCompiledSpec(Shayba.ORG_MORMONT, Shayba.PROJECT +"~dev", internalToken);
+        }
+        else if (Shayba.ENV_UUID_GOLAN2_SHAYBA_PROD.equalsIgnoreCase(envUuid)) {
+            return getLatestCompiledSpec(Shayba.ORG_GOLAN2, Shayba.PROJECT +"~prod", internalToken);
+        }
+        else if (Shayba.ENV_UUID_GOLAN2_SHAYBA_DEV.equalsIgnoreCase(envUuid)) {
+            return getLatestCompiledSpec(Shayba.ORG_GOLAN2, Shayba.PROJECT +"~dev", internalToken);
         }
         else {
             throw new IllegalArgumentException("Unrecognized envUuid: " + envUuid);
@@ -124,7 +134,11 @@ public class LocalController {
             case "mormont/shayba":
             case "mormont/shayba~dev":
             case "mormont/shayba~prod":
-                return Dfql.CS_MORMONT_SHAYBA;
+                return Shayba.CS_MORMONT_SHAYBA_DEV;
+            case "golan2/shayba":
+            case "golan2/shayba~dev":
+            case "golan2/shayba~prod":
+                return Shayba.CS_GOLAN2_SHAYBA_DEV;
             case "fleet/fleet-trucks-iot~dev":
                 return Fleet.COMPILED_SPEC_DEV;
             case "fleet/fleet-trucks-iot":
@@ -142,8 +156,14 @@ public class LocalController {
                                          @PathVariable("revision") String revision,
                                          @RequestHeader(name = "X-Internal-Token", defaultValue = "", required = false) String internalToken) throws Exception {
         log.debug("~~~[getRevisionProjectSpecInternal] envUuid={} revision={}", envUuid, revision);
-        if (Dfql.ID_SHAYBA_DEV.equalsIgnoreCase(envUuid)) {
-            return getLatestProjectSpec(Dfql.ORG, Dfql.PROJ, revision, "", internalToken);
+        if (Shayba.ENV_UUID_MORMONT_SHAYBA_DEV.equalsIgnoreCase(envUuid)) {
+            return getLatestProjectSpec(Shayba.ORG_MORMONT, Shayba.PROJECT+"~dev", revision, "", internalToken);
+        }
+        if (Shayba.ENV_UUID_GOLAN2_SHAYBA_DEV.equalsIgnoreCase(envUuid)) {
+            return getLatestProjectSpec(Shayba.ORG_GOLAN2, Shayba.PROJECT+"~dev", revision, "", internalToken);
+        }
+        if (Shayba.ENV_UUID_GOLAN2_SHAYBA_PROD.equalsIgnoreCase(envUuid)) {
+            return getLatestProjectSpec(Shayba.ORG_GOLAN2, Shayba.PROJECT+"~prod", revision, "", internalToken);
         }
         else if (Fleet.ENV_DEV.equalsIgnoreCase(envUuid)) {
             return getLatestProjectSpec(Fleet.ORG, Fleet.PROJ, revision, "", internalToken);
@@ -188,9 +208,15 @@ public class LocalController {
             case "no/classes":
                 return Dfql.PS_NO_CLASSES;
             case "mormont/shayba":
-            case "mormont/shayba~dev":
             case "mormont/shayba~prod":
-                return Dfql.PS_MORMONT_SHAYBA;
+                throw new IllegalArgumentException("We do not support [prod] for [mormont/shayba] yet");
+            case "mormont/shayba~dev":
+                return Shayba.PS_MORMONT_SHAYBA_DEV;
+            case "golan2/shayba":
+            case "golan2/shayba~prod":
+                return Shayba.PS_GOLAN2_SHAYBA_PROD;
+            case "golan2/shayba~dev":
+                return Shayba.PS_GOLAN2_SHAYBA_DEV;
             case "fleet/fleet-trucks-iot~dev":
             case "fleet/fleet-trucks-iot":
             case "fleet/fleet-trucks-iot~prod":
@@ -233,7 +259,12 @@ public class LocalController {
             return new ObjectMapper().writeValueAsString(new UuidResponse(fleet.getUuid()));
         }
 
-        return null;
+        final Env shayba = Shayba.findEnvironment(organization, project);
+        if (shayba != null) {
+            return new ObjectMapper().writeValueAsString(new UuidResponse(shayba.getUuid()));
+        }
+
+        throw new RejectException(HttpStatus.NOT_FOUND, "Project does not exist");
     }
 
     @GetMapping(value = "v1/environments/{org}/{project}", produces = MediaType.APPLICATION_JSON_VALUE)

@@ -17,3 +17,6 @@ logging:
     org.springframework.web: TRACE
     com.howtodoinjava: INFO
     org.hibernate: ERROR
+authentication:
+  enabled: true
+  internal-token: dev
