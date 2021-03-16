@@ -1,4 +1,4 @@
-package com.golan.local.dataflow.data.registry;
+package com.golan.local.dataflow.data;
 
 import com.golan.local.dataflow.data.Env;
 

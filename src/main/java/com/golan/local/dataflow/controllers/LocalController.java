@@ -6,7 +6,7 @@ import com.golan.local.dataflow.data.Dfql;
 import com.golan.local.dataflow.data.Env;
 import com.golan.local.dataflow.data.Fleet;
 import com.golan.local.dataflow.data.WhiteRaven;
-import com.golan.local.dataflow.data.registry.Shayba;
+import com.golan.local.dataflow.data.Shayba;
 import com.golan.local.dataflow.json.iam.organizations.OrganizationsResponse;
 import com.golan.local.dataflow.json.kong.Consumer;
 import com.golan.local.dataflow.json.orchestration.environments.Environment;
