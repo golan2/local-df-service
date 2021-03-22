@@ -1,11 +1,307 @@
 package com.golan.local.dataflow.data;
 
-import com.golan.local.dataflow.data.Env;
-
 import java.util.UUID;
 
 public class Shayba {
     private static final String PLACE_HOLDER = "%s";
+    public static final String ENV_UUID_MORMONT_SHAYBA_DEV = "aea50ab6-32db-11ea-977e-29d880279c99";
+    public static final String ENV_UUID_GOLAN2_SHAYBA_PROD = "3fbdd4b2-6ca4-11eb-ae36-3b305d40ca6c";
+    public static final String ENV_UUID_GOLAN2_SHAYBA_DEV  = "3fbdd4ee-6ca4-11eb-ae36-3b305d40ca6c";
+    public static final String ORG_GOLAN2                  = "golan2";
+    public static final String ORG_MORMONT                 = "mormont";
+    public static final String PROJECT                     = "shayba";
+    public static final String PROD                        = "prod";
+    public static final String DEV                         = "dev";
+
+
+    public static final String COMPILED_GOLAN2_SHAYBA_DEV = "" +
+            "{\n" +
+            "  \"apiVersion\": 0,\n" +
+            "  \"classes\": {\n" +
+            "    \"drone\": {\n" +
+            "      \"streams\": {\n" +
+            "        \"speed\": {\n" +
+            "          \"type\": \"number\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"54da0886-4aa4-421c-80aa-fd0798f4aa26\"\n" +
+            "        },\n" +
+            "        \"location\": {\n" +
+            "          \"type\": \"geopoint\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"d0929ada-f899-486f-88f5-ebba463b93be\"\n" +
+            "        },\n" +
+            "        \"message\": {\n" +
+            "          \"type\": \"text\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"902f80d5-48b1-423e-858e-2ebdf79155f9\"\n" +
+            "        },\n" +
+            "        \"fast\": {\n" +
+            "          \"type\": \"number\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"9884a466-a15f-4395-bb91-894e1986f52b\"\n" +
+            "        },\n" +
+            "        \"slow\": {\n" +
+            "          \"type\": \"number\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"a944d930-5c69-4311-9e8b-9c98b0833b99\"\n" +
+            "        },\n" +
+            "        \"ts\": {\n" +
+            "          \"type\": \"timestamp\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"246aa00b-d7e8-49bf-a187-750341f0e6f8\"\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"attributes\": {\n" +
+            "        \"attrib_text\": {\n" +
+            "          \"type\": \"text\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"c3063861-116d-4c93-b255-908bc1a52302\"\n" +
+            "        },\n" +
+            "        \"attrib_num\": {\n" +
+            "          \"type\": \"number\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"383f9c4a-38b9-41ed-a816-8220f87b279a\"\n" +
+            "        },\n" +
+            "        \"attrib_int\": {\n" +
+            "          \"type\": \"integer\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"05341c89-c22d-4ba5-81de-b839319d329f\"\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"events\": {\n" +
+            "        \"speed2high\": {\n" +
+            "          \"data\": {\n" +
+            "            \"speed\": {\n" +
+            "              \"type\": \"number\",\n" +
+            "              \"name\": \"\",\n" +
+            "              \"comment\": \"\",\n" +
+            "              \"uuid\": \"e00defc4-c237-4376-b560-5fa922d64b42\"\n" +
+            "            }\n" +
+            "          },\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"b4c63f98-ebcc-4427-ae66-2ad38a28e954\"\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"adapter\": {\n" +
+            "        \"template\": \"custom-adapter\",\n" +
+            "        \"publishTo\": \"input\",\n" +
+            "        \"count\": 1,\n" +
+            "        \"properties\": {},\n" +
+            "        \"uuid\": \"0256a095-ba73-4fa5-84a1-885caf10c0f5\",\n" +
+            "        \"_changes\": {\n" +
+            "          \"template\": true,\n" +
+            "          \"count\": true,\n" +
+            "          \"properties\": true\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"name\": \"\",\n" +
+            "      \"comment\": \"\",\n" +
+            "      \"has\": {},\n" +
+            "      \"hasMany\": {},\n" +
+            "      \"objectProperties\": {},\n" +
+            "      \"commands\": {},\n" +
+            "      \"onCreate\": [],\n" +
+            "      \"uuid\": \"7a3567c7-6494-4e34-bae0-beb1a2a26770\"\n" +
+            "    },\n" +
+            "    \"izik\": {\n" +
+            "      \"streams\": {\n" +
+            "        \"speed\": {\n" +
+            "          \"type\": \"number\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"a76514e1-ac11-41ba-a605-926ed5721006\"\n" +
+            "        },\n" +
+            "        \"where_i_am\": {\n" +
+            "          \"type\": \"geopoint\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"6cb54eb8-5f68-4274-875b-43ae7cb4be8f\"\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"adapter\": {\n" +
+            "        \"template\": \"custom-adapter\",\n" +
+            "        \"publishTo\": \"input\",\n" +
+            "        \"count\": 2,\n" +
+            "        \"properties\": {},\n" +
+            "        \"uuid\": \"b1fbb70c-add8-4a5e-b8e0-fda1c69b9e70\",\n" +
+            "        \"_changes\": {\n" +
+            "          \"template\": true,\n" +
+            "          \"count\": true,\n" +
+            "          \"properties\": true\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"name\": \"\",\n" +
+            "      \"comment\": \"\",\n" +
+            "      \"has\": {},\n" +
+            "      \"hasMany\": {},\n" +
+            "      \"objectProperties\": {},\n" +
+            "      \"attributes\": {},\n" +
+            "      \"events\": {},\n" +
+            "      \"commands\": {},\n" +
+            "      \"onCreate\": [],\n" +
+            "      \"uuid\": \"dab8b8a0-7ce0-44b4-83bd-cbc2fc2020b2\"\n" +
+            "    },\n" +
+            "    \"reserved\": {\n" +
+            "      \"streams\": {\n" +
+            "        \"timestamp\": {\n" +
+            "          \"type\": \"number\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"5075e7d7-b736-43c1-9ada-a9bc2c895b33\"\n" +
+            "        },\n" +
+            "        \"object_id\": {\n" +
+            "          \"type\": \"text\",\n" +
+            "          \"name\": \"\",\n" +
+            "          \"comment\": \"\",\n" +
+            "          \"uuid\": \"9a191d3d-95f0-498b-9d8f-97c591056965\"\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"name\": \"\",\n" +
+            "      \"comment\": \"\",\n" +
+            "      \"has\": {},\n" +
+            "      \"hasMany\": {},\n" +
+            "      \"objectProperties\": {},\n" +
+            "      \"attributes\": {},\n" +
+            "      \"events\": {},\n" +
+            "      \"commands\": {},\n" +
+            "      \"onCreate\": [],\n" +
+            "      \"uuid\": \"1e5e94c8-8d9e-4a9e-be21-72c31b84ac2a\"\n" +
+            "    }\n" +
+            "  },\n" +
+            "  \"architecture\": {\n" +
+            "    \"input\": {\n" +
+            "      \"type\": \"input\",\n" +
+            "      \"name\": \"\",\n" +
+            "      \"comment\": \"\",\n" +
+            "      \"config\": {},\n" +
+            "      \"from\": [],\n" +
+            "      \"to\": [\n" +
+            "        \"storage\"\n" +
+            "      ]\n" +
+            "    },\n" +
+            "    \"storage\": {\n" +
+            "      \"type\": \"storage\",\n" +
+            "      \"from\": [\n" +
+            "        \"input\"\n" +
+            "      ],\n" +
+            "      \"name\": \"\",\n" +
+            "      \"comment\": \"\",\n" +
+            "      \"config\": {},\n" +
+            "      \"to\": []\n" +
+            "    }\n" +
+            "  },\n" +
+            "  \"services\": {},\n" +
+            "  \"uuid\": \"3fbdd426-6ca4-11eb-ae36-3b305d40ca6c\",\n" +
+            "  \"env_uuid\": \"" + PLACE_HOLDER + "\",\n" +
+            "  \"organization\": \"golan2\",\n" +
+            "  \"identifier\": \"shayba\",\n" +
+            "  \"env\": \"" + PLACE_HOLDER + "\",\n" +
+            "  \"revision\": \"4d519714afd4a2a5e3235a0e3b052b026dc6e13c\",\n" +
+            "  \"deletions\": []\n" +
+            "}";
+
+    public static final String SOURCE_GOLAN2_SHAYBA_DEV = "" +
+            "{\n" +
+            "  \"apiVersion\": 0,\n" +
+            "  \"classes\": {\n" +
+            "    \"drone\": {\n" +
+            "      \"streams\": {\n" +
+            "        \"speed\": {\n" +
+            "          \"type\": \"number\"\n" +
+            "        },\n" +
+            "        \"location\": {\n" +
+            "          \"type\": \"geopoint\"\n" +
+            "        },\n" +
+            "        \"message\": {\n" +
+            "          \"type\": \"text\"\n" +
+            "        },\n" +
+            "        \"fast\": {\n" +
+            "          \"type\": \"number\"\n" +
+            "        },\n" +
+            "        \"slow\": {\n" +
+            "          \"type\": \"number\"\n" +
+            "        },\n" +
+            "        \"ts\": {\n" +
+            "          \"type\": \"timestamp\"\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"attributes\": {\n" +
+            "        \"attrib_text\": {\n" +
+            "          \"type\": \"text\"\n" +
+            "        },\n" +
+            "        \"attrib_num\": {\n" +
+            "          \"type\": \"number\"\n" +
+            "        },\n" +
+            "        \"attrib_int\": {\n" +
+            "          \"type\": \"integer\"\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"events\": {\n" +
+            "        \"speed2high\": {\n" +
+            "          \"data\": {\n" +
+            "            \"speed\": {\n" +
+            "              \"type\": \"number\"\n" +
+            "            }\n" +
+            "          }\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"adapter\": {\n" +
+            "        \"template\": \"custom-adapter\",\n" +
+            "        \"publishTo\": \"input\",\n" +
+            "        \"count\": 1\n" +
+            "      }\n" +
+            "    },\n" +
+            "    \"izik\": {\n" +
+            "      \"streams\": {\n" +
+            "        \"speed\": {\n" +
+            "          \"type\": \"number\"\n" +
+            "        },\n" +
+            "        \"where_i_am\": {\n" +
+            "          \"type\": \"geopoint\"\n" +
+            "        }\n" +
+            "      },\n" +
+            "      \"adapter\": {\n" +
+            "        \"template\": \"custom-adapter\",\n" +
+            "        \"publishTo\": \"input\",\n" +
+            "        \"count\": 2\n" +
+            "      }\n" +
+            "    },\n" +
+            "    \"reserved\": {\n" +
+            "      \"streams\": {\n" +
+            "        \"timestamp\": {\n" +
+            "          \"type\": \"number\"\n" +
+            "        },\n" +
+            "        \"object_id\": {\n" +
+            "          \"type\": \"text\"\n" +
+            "        }\n" +
+            "      }\n" +
+            "    }\n" +
+            "  },\n" +
+            "  \"architecture\": {\n" +
+            "    \"input\": {\n" +
+            "      \"type\": \"input\"\n" +
+            "    },\n" +
+            "    \"storage\": {\n" +
+            "      \"type\": \"storage\",\n" +
+            "      \"from\": [\n" +
+            "        \"input\"\n" +
+            "      ]\n" +
+            "    }\n" +
+            "  },\n" +
+            "  \"env_uuid\": \"" + PLACE_HOLDER + "\"\n" +
+            "}";
+
+
     //Compiled Spec
     private static final String COMPILED_SPEC =
             "" +
@@ -297,21 +593,18 @@ public class Shayba {
             "}";
 
 
-    public static final String ENV_UUID_MORMONT_SHAYBA_DEV = "aea50ab6-32db-11ea-977e-29d880279c99";
-    public static final String ENV_UUID_GOLAN2_SHAYBA_PROD = "3fbdd4b2-6ca4-11eb-ae36-3b305d40ca6c";
-    public static final String ENV_UUID_GOLAN2_SHAYBA_DEV  = "3fbdd4ee-6ca4-11eb-ae36-3b305d40ca6c";
-    public static final String ORG_GOLAN2                  = "golan2";
-    public static final String ORG_MORMONT                 = "mormont";
-    public static final String PROJECT                     = "shayba";
-    public static final String PROD                        = "prod";
-    public static final String DEV                         = "dev";
+
 
     public static final String CS_MORMONT_SHAYBA_DEV = String.format(COMPILED_SPEC, ENV_UUID_MORMONT_SHAYBA_DEV, ORG_MORMONT, PROJECT, DEV);
-    public static final String CS_GOLAN2_SHAYBA_DEV  = String.format(COMPILED_SPEC, ENV_UUID_GOLAN2_SHAYBA_DEV, ORG_GOLAN2, PROJECT, DEV  );
-    public static final String CS_GOLAN2_SHAYBA_PROD = String.format(COMPILED_SPEC, ENV_UUID_GOLAN2_SHAYBA_PROD, ORG_GOLAN2, PROJECT, PROD);
     public static final String PS_MORMONT_SHAYBA_DEV = String.format(SOURCE_SPEC, ENV_UUID_MORMONT_SHAYBA_DEV);
-    public static final String PS_GOLAN2_SHAYBA_DEV  = String.format(SOURCE_SPEC, ENV_UUID_GOLAN2_SHAYBA_DEV );
-    public static final String PS_GOLAN2_SHAYBA_PROD = String.format(SOURCE_SPEC, ENV_UUID_GOLAN2_SHAYBA_PROD);
+
+    public static final String CS_GOLAN2_SHAYBA_DEV  = String.format(COMPILED_GOLAN2_SHAYBA_DEV, ENV_UUID_GOLAN2_SHAYBA_DEV, DEV  );
+    public static final String CS_GOLAN2_SHAYBA_PROD  = String.format(COMPILED_GOLAN2_SHAYBA_DEV, ENV_UUID_GOLAN2_SHAYBA_PROD, PROD  );
+
+    public static final String PS_GOLAN2_SHAYBA_DEV = String.format(SOURCE_GOLAN2_SHAYBA_DEV, ENV_UUID_GOLAN2_SHAYBA_DEV);
+    public static final String PS_GOLAN2_SHAYBA_PROD = String.format(SOURCE_GOLAN2_SHAYBA_DEV, ENV_UUID_GOLAN2_SHAYBA_PROD);
+
+
 
     public static Env findEnvironment(String organization, String projectEnv) {
         final String[] arr = projectEnv.split("~");

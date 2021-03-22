@@ -1,7 +1,5 @@
 package com.golan.local.dataflow.json;
 
-import com.golan.local.dataflow.json.Meta;
-
 import java.util.ArrayList;
 import java.util.List;
 

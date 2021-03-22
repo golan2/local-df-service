@@ -2,10 +2,12 @@ package com.golan.local.dataflow.controllers;
 
 
 import com.golan.local.dataflow.data.Dfql;
+import com.golan.local.dataflow.data.Env;
 import com.golan.local.dataflow.data.OrgProj;
 import com.golan.local.dataflow.json.Paging;
 import com.golan.local.dataflow.data.WhiteRaven;
 import com.golan.local.dataflow.json.Meta;
+import com.golan.local.dataflow.json.orchestration.spec.ProjectSpec;
 import com.golan.local.dataflow.json.registry.ObjectCount;
 import com.golan.local.dataflow.json.registry.ObjectsResponse;
 import com.golan.local.dataflow.json.registry.RegObject;
@@ -24,6 +26,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @SuppressWarnings("unused")
 @RequestMapping("/v1/objects")
@@ -52,6 +57,30 @@ public class RegistryController {
         return result;
     }
 
+    @SuppressWarnings("unused")
+    @GetMapping(value = "/_/~{envUuid}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ObjectsResponse getObjectsOfEnvUuid(
+            @PathVariable("envUuid") String envUuid,
+            @RequestParam(value = "limit", defaultValue = "100", required = false) int limit,
+            @RequestParam(value = "cursor", defaultValue = "", required = false) String cursor) {
+
+
+        final Env environment = WhiteRaven.findEnvironment(UUID.fromString(envUuid));
+        final List<RegObject> allObjects;
+        if (environment != null) {
+            allObjects =
+                    WhiteRaven
+                            .getAllClasses(environment)
+                            .values()
+                            .stream()
+                            .flatMap(clazz -> WhiteRaven.getObjectsOfClass(environment, clazz.getName()).stream())
+                    .collect(Collectors.toList());
+        }
+        else {
+            allObjects = Collections.emptyList();
+        }
+        return resolveBulk(allObjects, limit, cursor);
+    }
 
     @SuppressWarnings("unused")
     @GetMapping(value = "/{org}/{proj}~{env}/{clazz}", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -71,6 +100,10 @@ public class RegistryController {
         else {
             allObjects = Collections.emptyList();
         }
+        return resolveBulk(allObjects, limit, cursor);
+    }
+
+    private ObjectsResponse resolveBulk(List<RegObject> allObjects, int limit, String cursor) {
         final ArrayList<RegObject> objects = new ArrayList<>(limit);
 
         final int startIndex = Paging.startIndex(cursor);
@@ -83,7 +116,6 @@ public class RegistryController {
         objectsResponse.setObjects(thisBulk);
         return objectsResponse;
     }
-
 
 
     @SuppressWarnings("unused")

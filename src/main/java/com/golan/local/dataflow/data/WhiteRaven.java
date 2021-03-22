@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +28,8 @@ public class WhiteRaven {
     private static final int ORG_COUNT = 2;
     private static final int PROJ_COUNT_PER_ORG = 2;
     private static final Map<OrgProj, List<Env>> ENVIRONMENTS = initEnvironments();
+    private static final Map<UUID, Env> uuidToEnv = keyByEnvUuid(ENVIRONMENTS);
+
     private static final String ORG_PREFIX = "wr_org_";
     private static final String PROJECT_PREFIX = "wr_proj_";
     private static final String CLASS_PREFIX = "class_";
@@ -80,12 +83,27 @@ public class WhiteRaven {
         return res;
     }
 
+    @SuppressWarnings("SameParameterValue")
+    private static Map<UUID, Env> keyByEnvUuid(Map<OrgProj, List<Env>> environments) {
+        return environments
+                .values()
+                .stream()
+                .flatMap(Collection::stream)
+                .collect( Collectors.toMap(Env::getUuid, e -> e) );
+    }
+
     private static List<Env> createEnvironmentsForProject(String org, String proj) {
         return  Arrays.stream(new Env[]{
                 new Env(org, proj, "dev", UuidStore.next()),
                 new Env(org, proj, "prod", UuidStore.next()),
         }).collect(Collectors.toList());
     }
+
+
+    public static Env findEnvironment(UUID envUuid) {
+        return uuidToEnv.get(envUuid);
+    }
+
 
     public static Env findEnvironment(String organization, String project) {
         if (invalidOrganization(organization)) return null;
@@ -116,16 +134,22 @@ public class WhiteRaven {
         return new Project(org, projectName(index), projectName(index), "", null);
     }
 
-    public static String projectSpecForWhiteRaven(Env env) throws JsonProcessingException {
+    public static String getProjectSpec(Env env) throws JsonProcessingException {
+        Map<String, ProjectSpec.Class> classes = getAllClasses(env);
+        return new ObjectMapper()
+                .writeValueAsString(
+                        new ProjectSpec(env.getUuid().toString(), null, classes)
+                );
+    }
+
+    @SuppressWarnings("unused")
+    public static Map<String, ProjectSpec.Class> getAllClasses(Env env) {
         Map<String, ProjectSpec.Class> classes = new HashMap<>();
         for (int i = 0; i < 3; i++) {
             final String className = className(i);
             classes.put(className, new ProjectSpec.Class(className, false, null));
         }
-        return new ObjectMapper()
-                .writeValueAsString(
-                        new ProjectSpec(env.getUuid().toString(), null, classes)
-                );
+        return classes;
     }
 
     public static String classesStructure() throws JsonProcessingException {
@@ -174,11 +198,15 @@ public class WhiteRaven {
         return projects;
     }
 
-    public static List<RegObject> getObjectsOfClass(OrgProj orgProj, String env, String clazz) {
-        final int count = getObjectCountForClass(orgProj, env, clazz);
+    public static List<RegObject> getObjectsOfClass(Env env, String className) {
+        return getObjectsOfClass(new OrgProj(env.getOrg(), env.getProj()), env.getEnv(), className);
+    }
+
+    public static List<RegObject> getObjectsOfClass(OrgProj orgProj, String env, String className) {
+        final int count = getObjectCountForClass(orgProj, env, className);
         final ArrayList<RegObject> res = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
-            res.add( new RegObject(objectName(i), false, null, SIMPLE_DATE_FORMAT.format(new Date()), "", clazz, null) );
+            res.add( new RegObject(objectName(i), false, null, SIMPLE_DATE_FORMAT.format(new Date()), "", className, null) );
         }
         return res;
     }
@@ -220,7 +248,7 @@ public class WhiteRaven {
         private static List<UUID> init() {
             final ArrayList<UUID> res = new ArrayList<>(100);
             for (int i = 1; i <= ORG_COUNT * PROJ_COUNT_PER_ORG *2; i++) {
-                res.add( UUID.fromString(String.format("8fab5a7d-72e7-40ce-8d02-000000%06d", i)) );
+                res.add( UUID.fromString(String.format("bbbbbbbb-bbbb-bbbb-bbbb-000000%06d", i)) );
             }
             return res;
         }

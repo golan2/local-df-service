@@ -131,14 +131,16 @@ public class LocalController {
 
         final String orgProj = organization + "/" + project;
         switch (orgProj) {
-            case "mormont/shayba":
             case "mormont/shayba~dev":
-            case "mormont/shayba~prod":
                 return Shayba.CS_MORMONT_SHAYBA_DEV;
-            case "golan2/shayba":
+            case "mormont/shayba":
+            case "mormont/shayba~prod":
+                throw new IllegalArgumentException("We do not support [prod] for [mormont/shayba] yet");
             case "golan2/shayba~dev":
-            case "golan2/shayba~prod":
                 return Shayba.CS_GOLAN2_SHAYBA_DEV;
+            case "golan2/shayba":
+            case "golan2/shayba~prod":
+                return Shayba.CS_GOLAN2_SHAYBA_PROD;
             case "fleet/fleet-trucks-iot~dev":
                 return Fleet.COMPILED_SPEC_DEV;
             case "fleet/fleet-trucks-iot":
@@ -189,7 +191,7 @@ public class LocalController {
         final Env envObj = WhiteRaven.findEnvironment(organization, project);
 
         if (envObj != null) {
-            return WhiteRaven.projectSpecForWhiteRaven(envObj);
+            return WhiteRaven.getProjectSpec(envObj);
         } else {
             return projectSpecForOtherUsages(organization, project);
         }
