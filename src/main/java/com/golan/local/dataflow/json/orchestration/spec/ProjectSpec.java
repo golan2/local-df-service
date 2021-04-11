@@ -12,6 +12,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static java.util.Collections.emptyList;
@@ -29,27 +30,31 @@ public class ProjectSpec {
     public ProjectSpec(@JsonProperty("env_uuid") String envUuid, @JsonProperty("architecture") Map<String, Component> architecture, @JsonProperty("classes") Map<String, Class> classes){
         this.envUuid = envUuid;
         this.architecture = architecture == null ? emptyMap(): architecture;
-        this.classes = classes == null ? emptyMap() : collectClasses(classes);
+        this.classes = classes == null ? emptyMap() : classes;
     }
 
     private static Map<String, Class> collectClasses(@JsonProperty("classes") Map<String, Class> classes) {
-        return classes.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> new Class(entry.getValue().isAdapter, entry.getKey(), entry.getValue().streams)));
+        return classes.entrySet()
+                .stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> new Class(entry.getValue().getClassUuid(), entry.getKey(), entry.getValue().streams, entry.getValue().isAdapter)));
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     private static class Component { }
 
     @AllArgsConstructor
+    @Getter
     @SuppressWarnings("unused")
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Class {
+        private final UUID classUuid;
         private final String name;
-        private final boolean isAdapter;
         private final Map<String, Stream> streams;
+        private final boolean isAdapter;
 
         @JsonCreator
         private Class(@JsonProperty("adapter") Object adapter, @JsonProperty("streams") Map<String, Stream> streams) {
-            this(adapter != null, null, collectStreams(streams));
+            this(null, null, collectStreams(streams), adapter != null);
         }
 
         private static Map<String, Stream> collectStreams(Map<String, Stream> streams) {
@@ -61,22 +66,16 @@ public class ProjectSpec {
                     .collect(Collectors.toMap(Map.Entry::getKey, e -> new Stream(e.getValue().type, e.getKey())));
         }
 
-        Class(boolean isAdapter, String name, Map<String, Stream> streams) {
-            this.name = name;
-            this.streams = streams;
-            this.isAdapter = isAdapter;
-        }
-
         boolean isAdapter() {
             return isAdapter;
         }
 
-        public Collection<Stream> getStreams() {
-            if (streams == null) {
-                return emptyList();
-            }
-            return Collections.unmodifiableCollection(streams.values());
-        }
+//        public Collection<Stream> getStreams() {
+//            if (streams == null) {
+//                return emptyList();
+//            }
+//            return Collections.unmodifiableCollection(streams.values());
+//        }
 
         Set<String> getStreamNames() {
             if (streams == null) {

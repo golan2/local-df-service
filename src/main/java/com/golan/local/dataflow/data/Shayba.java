@@ -10,11 +10,13 @@ public class Shayba {
     public static final String ORG_GOLAN2                  = "golan2";
     public static final String ORG_MORMONT                 = "mormont";
     public static final String PROJECT                     = "shayba";
-    public static final String PROD                        = "prod";
-    public static final String DEV                         = "dev";
+    private static final String PROD                        = "prod";
+    private static final String DEV                         = "dev";
+    private static final Env OPE_MORMONT_DEV = new Env(ORG_MORMONT, PROJECT, DEV, UUID.fromString(ENV_UUID_MORMONT_SHAYBA_DEV));
+    private static final Env OPE_GOLAN2_PROD = new Env(ORG_GOLAN2, PROJECT, PROD, UUID.fromString(ENV_UUID_GOLAN2_SHAYBA_PROD));
+    private static final Env OPE_GOLAN2_DEV = new Env(ORG_GOLAN2, PROJECT, DEV, UUID.fromString(ENV_UUID_GOLAN2_SHAYBA_DEV));
 
-
-    public static final String COMPILED_GOLAN2_SHAYBA_DEV = "" +
+    private static final String COMPILED_GOLAN2_SHAYBA_DEV = "" +
             "{\n" +
             "  \"apiVersion\": 0,\n" +
             "  \"classes\": {\n" +
@@ -210,7 +212,7 @@ public class Shayba {
             "  \"deletions\": []\n" +
             "}";
 
-    public static final String SOURCE_GOLAN2_SHAYBA_DEV = "" +
+    private static final String SOURCE_GOLAN2_SHAYBA_DEV = "" +
             "{\n" +
             "  \"apiVersion\": 0,\n" +
             "  \"classes\": {\n" +
@@ -626,6 +628,19 @@ public class Shayba {
             }
         }
 
+        return null;
+    }
+
+    public static Env findEnvironment(UUID envUuid) {
+        if (ENV_UUID_MORMONT_SHAYBA_DEV.equalsIgnoreCase(envUuid.toString())) {
+            return OPE_MORMONT_DEV;
+        }
+        if (ENV_UUID_GOLAN2_SHAYBA_DEV.equalsIgnoreCase(envUuid.toString())) {
+            return OPE_GOLAN2_DEV;
+        }
+        if (ENV_UUID_GOLAN2_SHAYBA_PROD.equalsIgnoreCase(envUuid.toString())) {
+            return OPE_GOLAN2_PROD;
+        }
         return null;
     }
 }

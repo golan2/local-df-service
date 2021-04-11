@@ -1,12 +1,15 @@
 package com.golan.local.dataflow.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.golan.local.dataflow.authentication.InternalApi;
-import com.golan.local.dataflow.data.Dfql;
 import com.golan.local.dataflow.data.Env;
 import com.golan.local.dataflow.data.Fleet;
-import com.golan.local.dataflow.data.WhiteRaven;
+import com.golan.local.dataflow.data.OrgProjEnv;
 import com.golan.local.dataflow.data.Shayba;
+import com.golan.local.dataflow.data.WhiteRaven;
+import com.golan.local.dataflow.json.Meta;
+import com.golan.local.dataflow.json.Paging;
 import com.golan.local.dataflow.json.iam.organizations.OrganizationsResponse;
 import com.golan.local.dataflow.json.kong.Consumer;
 import com.golan.local.dataflow.json.orchestration.environments.Environment;
@@ -14,12 +17,9 @@ import com.golan.local.dataflow.json.orchestration.environments.EnvironmentsResp
 import com.golan.local.dataflow.json.orchestration.projects.Project;
 import com.golan.local.dataflow.json.orchestration.projects.ProjectsResponse;
 import com.golan.local.dataflow.json.orchestration.spec.UuidResponse;
-import com.golan.local.dataflow.data.LoadEnvData;
-import com.golan.local.dataflow.json.Meta;
-import com.golan.local.dataflow.json.Paging;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -30,7 +30,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,12 +38,14 @@ import java.util.UUID;
 @RestController
 @Slf4j
 @InternalApi
-public class LocalController {
+@RequiredArgsConstructor
+public class OrchestrationController {
 
+    private static final ObjectMapper MAPPER = new ObjectMapper();
     @Value("${data.environment.name}")
     private String envName;
-
     private int counter;
+    final OrcDataGenerator dataGenerator;
 
     @GetMapping(value = "v1/tps")
     public boolean getTps() {
@@ -55,14 +56,7 @@ public class LocalController {
 
     @GetMapping(value = "v1/organizations")
     public OrganizationsResponse getOrganizations() {
-        log.debug("~~~[getOrganizations]");
-        if (envName.equalsIgnoreCase("load")) {
-            return new OrganizationsResponse(new Meta(), LoadEnvData.getAllOrganizations());
-        } else if (envName.equalsIgnoreCase("WhiteRaven")) {
-            return new OrganizationsResponse(new Meta(), WhiteRaven.getAllOrganizations());
-        } else {
-            throw new IllegalArgumentException("Unknown Env Name: " + envName);
-        }
+        return new OrganizationsResponse(new Meta(), dataGenerator.getOrganizationsList());
     }
 
 
@@ -82,12 +76,7 @@ public class LocalController {
         final ProjectsResponse projectsResponse = new ProjectsResponse();
 
 
-        List<Project> allProjects;
-        if (WhiteRaven.matchOrganization(org)) {
-            allProjects = WhiteRaven.getProjectsForOrg(org);
-        } else {
-            allProjects = Collections.emptyList();
-        }
+        final List<Project> allProjects = dataGenerator.getProjectsForOrg(org);
 
         final int startIndex = Paging.startIndex(cursor);
         final int lastIndex = Paging.lastIndex(startIndex, limit, allProjects.size());
@@ -97,7 +86,6 @@ public class LocalController {
         projectsResponse.setMeta(meta);
         return projectsResponse;
     }
-
 
 
     //   /v1/projects
@@ -122,7 +110,7 @@ public class LocalController {
         }
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "WeakerAccess"})
     @GetMapping(value = "v1/projects/{org}/{project}/spec/revisions/latest/compiled", produces = MediaType.APPLICATION_JSON_VALUE)
     public String getLatestCompiledSpec(@PathVariable("org") String organization,
                                         @PathVariable("project") String project,
@@ -167,11 +155,15 @@ public class LocalController {
         if (Shayba.ENV_UUID_GOLAN2_SHAYBA_PROD.equalsIgnoreCase(envUuid)) {
             return getLatestProjectSpec(Shayba.ORG_GOLAN2, Shayba.PROJECT+"~prod", revision, "", internalToken);
         }
-        else if (Fleet.ENV_DEV.equalsIgnoreCase(envUuid)) {
+        else if (Fleet.ENV_UUID_DEV.equalsIgnoreCase(envUuid)) {
             return getLatestProjectSpec(Fleet.ORG, Fleet.PROJ, revision, "", internalToken);
         }
-        else if (Fleet.ENV_PROD.equalsIgnoreCase(envUuid)) {
+        else if (Fleet.ENV_UUID_PROD.equalsIgnoreCase(envUuid)) {
             return getLatestProjectSpec(Fleet.ORG, Fleet.PROJ, revision, "", internalToken);
+        }
+        else if (WhiteRaven.findEnvironment(UUID.fromString(envUuid)) != null) {
+            final Env env = WhiteRaven.findEnvironment(UUID.fromString(envUuid));
+            return WhiteRaven.getProjectSpecAsString(env);
         }
         else {
             throw new IllegalArgumentException("Unsupported ENVUUID: " + envUuid);
@@ -179,54 +171,24 @@ public class LocalController {
 
     }
 
-    @SuppressWarnings("unused")
+    @SuppressWarnings({"unused", "WeakerAccess"})
     @GetMapping(value = "v1/projects/{org}/{project}/spec/revisions/{revision}/source.json", produces = MediaType.APPLICATION_JSON_VALUE)
     public String getLatestProjectSpec(@PathVariable("org") String organization,
                                        @PathVariable("project") String project,
                                        @PathVariable("revision") String revision,
                                        @RequestParam("with_env_uuid") String with_env_uuid,
-                                       @RequestHeader(name = "X-Internal-Token", defaultValue = "", required = false) String internalToken) throws Exception {
+                                       @RequestHeader(name = "X-Internal-Token", defaultValue = "", required = false) String internalToken) throws JsonProcessingException {
         log.debug("~~~[getLatestProjectSpec] organization={} project={} revision={} withEnv={}", organization, project, revision, with_env_uuid);
 
         final Env envObj = WhiteRaven.findEnvironment(organization, project);
 
         if (envObj != null) {
-            return WhiteRaven.getProjectSpec(envObj);
+            return WhiteRaven.getProjectSpecAsString(envObj);
         } else {
-            return projectSpecForOtherUsages(organization, project);
+            return dataGenerator.projectSpecForOtherUsages(organization, project);
         }
     }
 
-
-    private String projectSpecForOtherUsages(@PathVariable("org") String org, @PathVariable("project") String project) {
-        log.debug("~~~[projectSpecForOtherUsages] organization={} project={}", org, project);
-        final String env = org + "/" + project;
-
-        switch (env) {
-            case "org/proj":
-                return Dfql.PS_ORG_PROJ;
-            case "nes/cows":
-                return Dfql.PS_NES_COWS;
-            case "no/classes":
-                return Dfql.PS_NO_CLASSES;
-            case "mormont/shayba":
-            case "mormont/shayba~prod":
-                throw new IllegalArgumentException("We do not support [prod] for [mormont/shayba] yet");
-            case "mormont/shayba~dev":
-                return Shayba.PS_MORMONT_SHAYBA_DEV;
-            case "golan2/shayba":
-            case "golan2/shayba~prod":
-                return Shayba.PS_GOLAN2_SHAYBA_PROD;
-            case "golan2/shayba~dev":
-                return Shayba.PS_GOLAN2_SHAYBA_DEV;
-            case "fleet/fleet-trucks-iot~dev":
-            case "fleet/fleet-trucks-iot":
-            case "fleet/fleet-trucks-iot~prod":
-                return Fleet.PROJECT_SPEC;
-            default:
-                throw new IllegalArgumentException("No such env: " + env);
-        }
-    }
 
     @GetMapping(value = "v1/projects/{org}/{project}/spec/revisions/latest/classes_structure", produces = MediaType.APPLICATION_JSON_VALUE)
     public String getClassesStructure(@PathVariable("org") String organization,
@@ -246,27 +208,22 @@ public class LocalController {
     @GetMapping(value = "v1/environments/{org}/{project}/uuid", produces = MediaType.APPLICATION_JSON_VALUE)
     public String getEnvUuid(@PathVariable("org") String organization,
                              @PathVariable("project") String project,
-                             @RequestHeader(name = "X-Internal-Token", defaultValue = "", required = false) String internalToken) throws Exception {
+                             @RequestHeader(name = "X-Internal-Token", defaultValue = "", required = false) String internalToken) throws JsonProcessingException, RejectException {
 
         log.debug("~~~[getEnvUuid] organization={} project={}", organization, project);
         log.debug("X-Internal-Token: {}", internalToken);
 
-        final Env white = WhiteRaven.findEnvironment(organization, project);
-        if (white != null) {
-            return new ObjectMapper().writeValueAsString(new UuidResponse(white.getUuid()));
-        }
+        return MAPPER.writeValueAsString(new UuidResponse(dataGenerator.convertToEnvUUID(organization, project)));
+    }
 
-        final Env fleet = Fleet.findEnvironment(organization, project);
-        if (fleet != null) {
-            return new ObjectMapper().writeValueAsString(new UuidResponse(fleet.getUuid()));
-        }
+    @GetMapping(value = "v1/environments/{envUuid}/identifier", produces = MediaType.APPLICATION_JSON_VALUE)
+    public OrgProjEnv getOrgProjEnv(@PathVariable("envUuid") String envUuid,
+                             @RequestHeader(name = "X-Internal-Token", defaultValue = "", required = false) String internalToken) throws JsonProcessingException, RejectException {
 
-        final Env shayba = Shayba.findEnvironment(organization, project);
-        if (shayba != null) {
-            return new ObjectMapper().writeValueAsString(new UuidResponse(shayba.getUuid()));
-        }
+        log.debug("~~~[getOrgProjEnv] envUuid={}", envUuid);
+        log.debug("X-Internal-Token: {}", internalToken);
 
-        throw new RejectException(HttpStatus.NOT_FOUND, "Project does not exist");
+        return new OrgProjEnv(dataGenerator.findEnvByUuid(envUuid));
     }
 
     @GetMapping(value = "v1/environments/{org}/{project}", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -285,9 +242,7 @@ public class LocalController {
 
         final EnvironmentsResponse environmentsResponse = new EnvironmentsResponse();
         environmentsResponse.setDefault("prod");
-        final ArrayList<Environment> environments = new ArrayList<>(2);
-        environments.add(new Environment("dev", "Development", "An environment for development of new features.", "prod", null, null));
-        environments.add(new Environment("prod", "Production", "An environment for live production data.", null, null, null));
+        final ArrayList<Environment> environments = dataGenerator.getEnvironmentsForProject();
         environmentsResponse.setEnvironments(environments);
         return environmentsResponse;
     }

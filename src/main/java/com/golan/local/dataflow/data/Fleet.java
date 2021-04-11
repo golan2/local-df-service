@@ -3,23 +3,31 @@ package com.golan.local.dataflow.data;
 import java.util.UUID;
 
 public class Fleet {
-    public static final String ENV_DEV = "db01c146-8f68-11ea-a4eb-6398166be91d";
-    public static final String ENV_PROD = "db01c0ec-8f68-11ea-a4eb-6398166be91d";
-    public static final String PROJ = "fleet-trucks-iot";
+    public static final String ENV_UUID_DEV = "db01c146-8f68-11ea-a4eb-6398166be91d";
+    public static final String ENV_UUID_PROD = "db01c0ec-8f68-11ea-a4eb-6398166be91d";
+
     public static final String ORG = "fleet";
+    public static final String PROJ = "fleet-trucks-iot";
+
+    private static final String DEV = "dev";
+    private static final String PROD = "prod";
+
+    private static final Env OPE_DEV = new Env(ORG, PROJ, DEV, UUID.fromString(ENV_UUID_DEV));
+    private static final Env OPE_PROD = new Env(ORG, PROJ, PROD, UUID.fromString(ENV_UUID_PROD));
 
 
     private static final String COMPILED_SPEC = constructCompiledSpec();
 
-    public static final String PROJECT_SPEC = constructProjectSpec();
-    public static final String COMPILED_SPEC_DEV = String.format(COMPILED_SPEC, ENV_DEV);
-    public static final String COMPILED_SPEC_PROD = String.format(COMPILED_SPEC, ENV_PROD);
+    public static final String PROJECT_SPEC_DEV = constructProjectSpec(ENV_UUID_DEV);
+    public static final String PROJECT_SPEC_PROD = constructProjectSpec(ENV_UUID_PROD);
+    public static final String COMPILED_SPEC_DEV = String.format(COMPILED_SPEC, ENV_UUID_DEV);
+    public static final String COMPILED_SPEC_PROD = String.format(COMPILED_SPEC, ENV_UUID_PROD);
     private static final String CB_URL_1 = "runi.flow.cloud";
     private static final String CB_URL_2 = "att";
     private static final String CB_URL_3 = "com";
     private static final String CB_URL = CB_URL_1 + "." + CB_URL_2 + "."  + CB_URL_3;
 
-    private static String constructProjectSpec() {
+    private static String constructProjectSpec(String envUuid) {
         return "" +
                 "{\n" +
                 "  \"apiVersion\": 0,\n" +
@@ -822,7 +830,7 @@ public class Fleet {
                 "      }\n" +
                 "    }\n" +
                 "  },\n" +
-                "  \"env_uuid\": \"db01c146-8f68-11ea-a4eb-6398166be91d\"\n" +
+                "  \"env_uuid\": \"" + envUuid + "\"\n" +
                 "}";
     }
 
@@ -2308,16 +2316,26 @@ public class Fleet {
         if (!ORG.equals(organization)) return null;
         final String[] arr = projectEnv.split("~");
         final String project = arr[0].trim();
-        final String env = arr.length < 2 ? "prod" : arr[1].trim();
+        final String env = arr.length < 2 ? PROD : arr[1].trim();
         if (!PROJ.equals(project)) return null;
-        if ("prod".equals(env)) {
-            return new Env(ORG, project, env, UUID.fromString("db01c0ec-8f68-11ea-a4eb-6398166be91d"));
+        if (PROD.equals(env)) {
+            return new Env(ORG, project, env, UUID.fromString(ENV_UUID_PROD));
         }
-        else if ("dev".equals(env)) {
-            return new Env(ORG, project, env, UUID.fromString("db01c146-8f68-11ea-a4eb-6398166be91d"));
+        else if (DEV.equals(env)) {
+            return new Env(ORG, project, env, UUID.fromString(ENV_UUID_DEV));
         }
         else {
             return null;
         }
+    }
+
+    public static Env findEnvironment(UUID envUuid) {
+        if (ENV_UUID_DEV.equalsIgnoreCase(envUuid.toString())) {
+            return OPE_DEV;
+        }
+        if (ENV_UUID_PROD.equalsIgnoreCase(envUuid.toString())) {
+            return OPE_PROD;
+        }
+        return null;
     }
 }

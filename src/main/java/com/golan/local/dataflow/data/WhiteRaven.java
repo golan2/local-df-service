@@ -9,7 +9,6 @@ import com.golan.local.dataflow.json.orchestration.spec.ProjectSpec;
 import com.golan.local.dataflow.json.registry.RegObject;
 import lombok.extern.slf4j.Slf4j;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -18,23 +17,35 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 public class WhiteRaven {
 
-    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    private static final int    ORG_COUNT          = 2;
+    private static final int    PROJ_COUNT_PER_ORG = 2;
+    private static final String UNV_UUID_PREFIX    = "bbbbbbbb-bbbb-bbbb-bbbb-000000";
+    private static final String ORG_PREFIX         = "wr_org_";
+    private static final String PROJECT_PREFIX     = "wr_proj_";
+    private static final String CLASS_PREFIX       = "class_";
+    private static final String OBJ_PREFIX         = "obj_";
+    private static final String OBJ_UUID_PREFIX    = "aaaaaaaa-aaaa-aaaa-aaaa-000000";
+    private static final String CLASS_UUID_PREFIX  = "cccccccc-cccc-cccc-cccc-000000";
+    private static final long   BASE_DATE          = 946684800000L;  //  2000-01-01 00:00:00
+    private static final int    DAY_IN_MILLIS      = 86400000;
 
-    private static final int ORG_COUNT = 2;
-    private static final int PROJ_COUNT_PER_ORG = 2;
-    private static final Map<OrgProj, List<Env>> ENVIRONMENTS = initEnvironments();
-    private static final Map<UUID, Env> uuidToEnv = keyByEnvUuid(ENVIRONMENTS);
 
-    private static final String ORG_PREFIX = "wr_org_";
-    private static final String PROJECT_PREFIX = "wr_proj_";
-    private static final String CLASS_PREFIX = "class_";
-    private static final String OBJ_PREFIX = "obj_";
+
     private static final Map<OrgProjEnvClass, Integer> OBJECT_COUNT_PER_CLASS = initObjectCountPerClass();
+    private static final UuidStore envUuidStore = new UuidStore(UNV_UUID_PREFIX);
+    private static final UuidStore objectUuidStore = new UuidStore(OBJ_UUID_PREFIX);
+    private static final UuidStore classUuidStore = new UuidStore(CLASS_UUID_PREFIX);
+    private static final Map<OrgProj, List<Env>> ENVIRONMENTS = initEnvironments();
+    private static final Map<Env, Map<String, ProjectSpec.Class>> CLASSES_PER_ENV = initClasses();
+
+    private static final Map<UUID, Env> uuidToEnv = keyByEnvUuid(ENVIRONMENTS);
 
     private static String organizationName(int index) {
         return String.format(ORG_PREFIX + "%03d", index+1);
@@ -52,11 +63,18 @@ public class WhiteRaven {
         return String.format(OBJ_PREFIX + "%03d", index+1);
     }
 
+    private static String objectDate(int i) {
+        return RegObject.SIMPLE_DATE_FORMAT.format(new Date(BASE_DATE + i * DAY_IN_MILLIS));
+    }
+
     public static boolean invalidOrganization(String organization) {
         if (!organization.startsWith(ORG_PREFIX)) return false;      //it is not White Raven so not me to decide if valid or not
         for (int i = 0; i < ORG_COUNT; i++) {
             if (organizationName(i).equals(organization)) return false;
         }
+
+
+
         return true;
     }
 
@@ -83,6 +101,14 @@ public class WhiteRaven {
         return res;
     }
 
+    private static Map<Env, Map<String, ProjectSpec.Class>> initClasses() {
+        return ENVIRONMENTS.values()
+                .stream()
+                .flatMap((Function<List<Env>, Stream<Env>>) Collection::stream)
+                .collect(Collectors.toMap(Function.identity(), env -> generateClassesForEnv()));
+    }
+
+
     @SuppressWarnings("SameParameterValue")
     private static Map<UUID, Env> keyByEnvUuid(Map<OrgProj, List<Env>> environments) {
         return environments
@@ -94,8 +120,8 @@ public class WhiteRaven {
 
     private static List<Env> createEnvironmentsForProject(String org, String proj) {
         return  Arrays.stream(new Env[]{
-                new Env(org, proj, "dev", UuidStore.next()),
-                new Env(org, proj, "prod", UuidStore.next()),
+                new Env(org, proj, "dev", envUuidStore.next()),
+                new Env(org, proj, "prod", envUuidStore.next()),
         }).collect(Collectors.toList());
     }
 
@@ -134,20 +160,26 @@ public class WhiteRaven {
         return new Project(org, projectName(index), projectName(index), "", null);
     }
 
-    public static String getProjectSpec(Env env) throws JsonProcessingException {
-        Map<String, ProjectSpec.Class> classes = getAllClasses(env);
-        return new ObjectMapper()
-                .writeValueAsString(
-                        new ProjectSpec(env.getUuid().toString(), null, classes)
-                );
+    public static String getProjectSpecAsString(Env env) throws JsonProcessingException {
+        final ProjectSpec projectSpec = getProjectSpec(env);
+        return new ObjectMapper().writeValueAsString(projectSpec);
+    }
+
+    public static ProjectSpec getProjectSpec(Env env) {
+        final Map<String, ProjectSpec.Class> classes = getAllClasses(env);
+        return new ProjectSpec(env.getUuid().toString(), null, classes);
     }
 
     @SuppressWarnings("unused")
     public static Map<String, ProjectSpec.Class> getAllClasses(Env env) {
+        return CLASSES_PER_ENV.get(env);
+    }
+
+    private static Map<String, ProjectSpec.Class> generateClassesForEnv() {
         Map<String, ProjectSpec.Class> classes = new HashMap<>();
         for (int i = 0; i < 3; i++) {
             final String className = className(i);
-            classes.put(className, new ProjectSpec.Class(className, false, null));
+            classes.put(className, new ProjectSpec.Class(classUuidStore.next(), className, null, false));
         }
         return classes;
     }
@@ -206,7 +238,7 @@ public class WhiteRaven {
         final int count = getObjectCountForClass(orgProj, env, className);
         final ArrayList<RegObject> res = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
-            res.add( new RegObject(objectName(i), false, null, SIMPLE_DATE_FORMAT.format(new Date()), "", className, null) );
+            res.add( new RegObject(objectUuidStore.next(), objectName(i), false, null, objectDate(i), "", className, null) );
         }
         return res;
     }
@@ -241,20 +273,4 @@ public class WhiteRaven {
         return res;
     }
 
-    private static class UuidStore {
-        private static int nextIndex = 0;
-        private static List<UUID> inventar = init();
-
-        private static List<UUID> init() {
-            final ArrayList<UUID> res = new ArrayList<>(100);
-            for (int i = 1; i <= ORG_COUNT * PROJ_COUNT_PER_ORG *2; i++) {
-                res.add( UUID.fromString(String.format("bbbbbbbb-bbbb-bbbb-bbbb-000000%06d", i)) );
-            }
-            return res;
-        }
-
-        static UUID next() {
-            return inventar.get(nextIndex++);
-        }
-    }
 }
