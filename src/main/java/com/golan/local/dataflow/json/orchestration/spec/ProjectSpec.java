@@ -8,14 +8,12 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 
@@ -24,19 +22,19 @@ import static java.util.Collections.emptySet;
 public class ProjectSpec {
     private final String envUuid;
     private final Map<String, Component> architecture;
-    private final Map<String, Class> classes;
+    private final Map<String, ClassSpec> classes;
 
     @JsonCreator
-    public ProjectSpec(@JsonProperty("env_uuid") String envUuid, @JsonProperty("architecture") Map<String, Component> architecture, @JsonProperty("classes") Map<String, Class> classes){
+    public ProjectSpec(@JsonProperty("env_uuid") String envUuid, @JsonProperty("architecture") Map<String, Component> architecture, @JsonProperty("classes") Map<String, ClassSpec> classes){
         this.envUuid = envUuid;
         this.architecture = architecture == null ? emptyMap(): architecture;
         this.classes = classes == null ? emptyMap() : classes;
     }
 
-    private static Map<String, Class> collectClasses(@JsonProperty("classes") Map<String, Class> classes) {
+    private static Map<String, ClassSpec> Add(@JsonProperty("classes") Map<String, ClassSpec> classes) {
         return classes.entrySet()
                 .stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> new Class(entry.getValue().getClassUuid(), entry.getKey(), entry.getValue().streams, entry.getValue().isAdapter)));
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> new ClassSpec(entry.getValue().getClassUuid(), entry.getKey(), entry.getValue().streams, entry.getValue().isAdapter)));
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -46,24 +44,25 @@ public class ProjectSpec {
     @Getter
     @SuppressWarnings("unused")
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Class {
+    public static class ClassSpec {
+        @JsonProperty("uuid")
         private final UUID classUuid;
         private final String name;
-        private final Map<String, Stream> streams;
+        private final Map<String, StreamSpec> streams;
         private final boolean isAdapter;
 
         @JsonCreator
-        private Class(@JsonProperty("adapter") Object adapter, @JsonProperty("streams") Map<String, Stream> streams) {
+        private ClassSpec(@JsonProperty("adapter") Object adapter, @JsonProperty("streams") Map<String, StreamSpec> streams) {
             this(null, null, collectStreams(streams), adapter != null);
         }
 
-        private static Map<String, Stream> collectStreams(Map<String, Stream> streams) {
+        private static Map<String, StreamSpec> collectStreams(Map<String, StreamSpec> streams) {
             if (streams == null) {
                 return emptyMap();
             }
             return streams.entrySet()
                     .stream()
-                    .collect(Collectors.toMap(Map.Entry::getKey, e -> new Stream(e.getValue().type, e.getKey())));
+                    .collect(Collectors.toMap(Map.Entry::getKey, e -> new StreamSpec(e.getValue().type, e.getKey())));
         }
 
         boolean isAdapter() {
@@ -85,10 +84,10 @@ public class ProjectSpec {
         }
 
         public String getName() {
-            return name;
+            return name.toLowerCase();
         }
 
-        Stream getStream(String name) {
+        StreamSpec getStream(String name) {
             if (streams == null || !streams.containsKey(name)) {
                 return null;
             }
@@ -103,12 +102,12 @@ public class ProjectSpec {
     @Getter
     @AllArgsConstructor
     @JsonDeserialize(using = StreamsDeserializer.class)
-    static class Stream {
+    static class StreamSpec {
 
         private final StreamType type;
         private final String name;
 
-        Stream(StreamType type) {
+        StreamSpec(StreamType type) {
             this(type, null);
         }
 

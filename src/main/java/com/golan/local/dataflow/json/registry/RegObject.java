@@ -1,8 +1,6 @@
 package com.golan.local.dataflow.json.registry;
 
 
-import com.fasterxml.jackson.annotation.JsonAnyGetter;
-import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -10,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.experimental.Accessors;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -21,6 +20,7 @@ import java.util.UUID;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Accessors(chain = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
         "identifier",
@@ -40,16 +40,17 @@ public class RegObject {
     @JsonProperty("has_cert")
     private Boolean hasCert;
     @JsonProperty("lastStreamUpdate")
-    private java.lang.Object lastStreamUpdate;
+    private String lastStreamUpdate;
     @JsonProperty("created_at")
     private String createdAt;
     @JsonProperty("description")
     private String description;
     @JsonProperty("class")
-    private String _class;
+    private String className;
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
+    /*
     @JsonProperty("identifier")
     public String getIdentifier() {
         return identifier;
@@ -120,7 +121,11 @@ public class RegObject {
         this.additionalProperties.put(name, value);
     }
 
+     */
+
     public Date getCreatedAtAsDate() throws ParseException {
         return SIMPLE_DATE_FORMAT.parse(getCreatedAt());
     }
 }
+
+

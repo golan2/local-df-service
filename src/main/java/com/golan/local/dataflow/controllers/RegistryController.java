@@ -3,6 +3,7 @@ package com.golan.local.dataflow.controllers;
 
 import com.golan.local.dataflow.data.Dfql;
 import com.golan.local.dataflow.data.Env;
+import com.golan.local.dataflow.data.Fleet;
 import com.golan.local.dataflow.data.OrgProj;
 import com.golan.local.dataflow.data.OrgProjEnv;
 import com.golan.local.dataflow.data.WhiteRaven;
@@ -66,18 +67,18 @@ public class RegistryController {
         final HashMap<UUID, List<RegObject>> map = new HashMap<>();
         assert orchestrationController != null;
         final List<Organization> organizations = orcData.getOrganizationsList();
-        final Stream<Project> projects = flatProjects(organizations);
-        final Stream<OrgProjEnv> opes = flatEnvironments(projects);
-        final Stream<String> envUuids = opes.map(this::convertToEnvUuid);
-        return envUuids.collect(Collectors.toMap(Function.identity(), this::generateObjectsList));
+        final List<Project> projects = flatProjects(organizations).collect(Collectors.toList());
+        final List<OrgProjEnv> opes = flatEnvironments(projects).collect(Collectors.toList());
+        final List<String> envUuids = opes.stream().map(this::convertToEnvUuid).collect(Collectors.toList());
+        return envUuids.stream().collect(Collectors.toMap(Function.identity(), this::generateObjectsList));
     }
 
     private Stream<Project> flatProjects(List<Organization> organizations) {
         return organizations.stream().flatMap(organization -> orcData.getProjectsForOrg(organization.getIdentifier()).stream());
     }
 
-    private Stream<OrgProjEnv> flatEnvironments(Stream<Project> projects) {
-        return projects.flatMap(project ->
+    private Stream<OrgProjEnv> flatEnvironments(List<Project> projects) {
+        return projects.stream().flatMap(project ->
                 orcData
                         .getEnvironmentsForProject()
                         .stream()
@@ -111,7 +112,7 @@ public class RegistryController {
             @RequestParam(value = "limit", defaultValue = "100", required = false) int limit,
             @RequestParam(value = "cursor", defaultValue = "", required = false) String cursor) {
 
-        final List<RegObject> allObjects = generateObjectsList(envUuid);
+        final List<RegObject> allObjects = registryObjectsPerEnvironment.get(envUuid);
         return resolveBulk(allObjects, limit, cursor);
     }
 
@@ -152,8 +153,11 @@ public class RegistryController {
                                             @PathVariable("objectId") String objectId) throws RejectException, IOException {
         final RegObject regObject = findGeneratedObject(envUuid, className, objectId);
         final Env env = orcData.findEnvByUuid(envUuid);
-        final ProjectSpec projectSpec = orcData.getLatestProjectSpec(env);
-        final ProjectSpec.Class classSpec = projectSpec.getClasses().get(className);
+        final ProjectSpec projectSpec = orcData.getLatestCompiledSpec(env);
+        final ProjectSpec.ClassSpec classSpec = projectSpec.getClasses().get(className);
+        if (classSpec == null) {
+            throw new RejectException(HttpStatus.NOT_FOUND, "Invalid class for project.");
+        }
         return new ObjectUuidResponse(classSpec.getClassUuid().toString(), regObject.getObjectUuid().toString());
     }
 
@@ -192,34 +196,42 @@ public class RegistryController {
     private ObjectDetails convertToObjectDetails(RegObject regObject) throws ParseException {
         return new ObjectDetails()
                 .setObjectId(regObject.getIdentifier())
-                .setClassName(regObject.getClass_())
+                .setClassName(regObject.getClassName())
                 .setCreatedAt(regObject.getCreatedAtAsDate())
                 .setAttributes(createAttributes(regObject))
                 .setDescription(regObject.getDescription());
     }
 
     private List<RegObject> generateObjectsList(@PathVariable("envUuid") String envUuid) {
-        final Env environment = WhiteRaven.findEnvironment(UUID.fromString(envUuid));
-        final List<RegObject> allObjects;
-        if (environment != null) {
-            allObjects =
-                    WhiteRaven
-                            .getAllClasses(environment)
-                            .values()
-                            .stream()
-                            .flatMap(clazz -> WhiteRaven.getObjectsOfClass(environment, clazz.getName()).stream())
-                            .collect(Collectors.toList());
+        final UUID envUUID = UUID.fromString(envUuid);
+        final Env whiteReaven = WhiteRaven.findEnvironment(envUUID);
+        final Env fleet = Fleet.findEnvironment(envUUID);
+
+        if (whiteReaven != null) {
+            return WhiteRaven
+                    .getAllClasses(whiteReaven)
+                    .values()
+                    .stream()
+                    .flatMap(clazz -> WhiteRaven.getObjectsOfClass(whiteReaven, clazz.getName()).stream())
+                    .collect(Collectors.toList());
         }
-        else {
-            allObjects = Collections.emptyList();
+
+        if (fleet != null) {
+            return Fleet
+                    .getAllClasses(fleet)
+                    .values()
+                    .stream()
+                    .flatMap(clazz -> Fleet.getObjectsOfClass(fleet, clazz.getName()).stream())
+                    .collect(Collectors.toList());
         }
-        return allObjects;
+
+        return Collections.emptyList();
     }
 
     private RegObject findGeneratedObject(@PathVariable("envUuid") String envUuid, @PathVariable("className") String className, @PathVariable("objectId") String objectId) throws RejectException {
         return registryObjectsPerEnvironment.get(envUuid)
                 .stream()
-                .filter(o -> o.getClass_().equals(className) && o.getIdentifier().equals(objectId))
+                .filter(o -> o.getClassName().equals(className) && o.getIdentifier().equals(objectId))
                 .findFirst()
                 .orElseThrow(() -> new RejectException(HttpStatus.NOT_FOUND, "DataflowObject does not exist."));
     }
@@ -228,7 +240,7 @@ public class RegistryController {
         return Map.of(
                 "simulateEmptyAttribute", createAttribute("", null),
                 "name", createAttribute("name", regObject.getIdentifier()),
-                "stam", createAttribute("stam", regObject.getClass_() + "|" + regObject.getCreatedAt()),
+                "stam", createAttribute("stam", regObject.getClassName() + "|" + regObject.getCreatedAt()),
                 "hashCode", createAttribute("hashCode", regObject.hashCode())
         );
     }

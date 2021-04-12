@@ -19,7 +19,6 @@ import com.golan.local.dataflow.json.orchestration.projects.ProjectsResponse;
 import com.golan.local.dataflow.json.orchestration.spec.UuidResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,8 +41,6 @@ import java.util.UUID;
 public class OrchestrationController {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    @Value("${data.environment.name}")
-    private String envName;
     private int counter;
     final OrcDataGenerator dataGenerator;
 
@@ -117,27 +114,7 @@ public class OrchestrationController {
                                         @RequestHeader(name = "X-Internal-Token", defaultValue = "", required = false) String internalToken) {
         log.debug("~~~[getLatestCompiledSpec] organization={} project={}", organization, project);
 
-        final String orgProj = organization + "/" + project;
-        switch (orgProj) {
-            case "mormont/shayba~dev":
-                return Shayba.CS_MORMONT_SHAYBA_DEV;
-            case "mormont/shayba":
-            case "mormont/shayba~prod":
-                throw new IllegalArgumentException("We do not support [prod] for [mormont/shayba] yet");
-            case "golan2/shayba~dev":
-                return Shayba.CS_GOLAN2_SHAYBA_DEV;
-            case "golan2/shayba":
-            case "golan2/shayba~prod":
-                return Shayba.CS_GOLAN2_SHAYBA_PROD;
-            case "fleet/fleet-trucks-iot~dev":
-                return Fleet.COMPILED_SPEC_DEV;
-            case "fleet/fleet-trucks-iot":
-            case "fleet/fleet-trucks-iot~prod":
-                return Fleet.COMPILED_SPEC_PROD;
-            default:
-                throw new IllegalArgumentException("Unrecognized project: " + orgProj);
-
-        }
+        return dataGenerator.getLatestCompiledSpecAsString(organization, project);
     }
 
     ///v1/projects/_/~aea50ab6-32db-11ea-977e-29d880279c99/spec/revisions/470230d5a568a353585033e6aa06d1e6d43ad4ab/source.json

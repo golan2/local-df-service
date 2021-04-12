@@ -5,9 +5,9 @@ server:
   port : 9095
 
 data:
-  environment:
-    # Load   WhiteRaven  DFQL
-    name: "WhiteRaven"
+  scenarios:
+    # See: com.golan.local.dataflow.controllers.OrcDataGenerator.Scenario
+    csv: "Fleet"
 
 logging:
   pattern:

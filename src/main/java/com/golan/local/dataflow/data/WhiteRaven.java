@@ -43,7 +43,7 @@ public class WhiteRaven {
     private static final UuidStore objectUuidStore = new UuidStore(OBJ_UUID_PREFIX);
     private static final UuidStore classUuidStore = new UuidStore(CLASS_UUID_PREFIX);
     private static final Map<OrgProj, List<Env>> ENVIRONMENTS = initEnvironments();
-    private static final Map<Env, Map<String, ProjectSpec.Class>> CLASSES_PER_ENV = initClasses();
+    private static final Map<Env, Map<String, ProjectSpec.ClassSpec>> CLASSES_PER_ENV = initClasses();
 
     private static final Map<UUID, Env> uuidToEnv = keyByEnvUuid(ENVIRONMENTS);
 
@@ -101,7 +101,7 @@ public class WhiteRaven {
         return res;
     }
 
-    private static Map<Env, Map<String, ProjectSpec.Class>> initClasses() {
+    private static Map<Env, Map<String, ProjectSpec.ClassSpec>> initClasses() {
         return ENVIRONMENTS.values()
                 .stream()
                 .flatMap((Function<List<Env>, Stream<Env>>) Collection::stream)
@@ -166,20 +166,30 @@ public class WhiteRaven {
     }
 
     public static ProjectSpec getProjectSpec(Env env) {
-        final Map<String, ProjectSpec.Class> classes = getAllClasses(env);
+        final Map<String, ProjectSpec.ClassSpec> classes = getAllClasses(env);
         return new ProjectSpec(env.getUuid().toString(), null, classes);
     }
 
+
+    public static String getCompiledSpecAsString(Env env) throws JsonProcessingException {
+        final ProjectSpec projectSpec = getCompiledSpec(env);
+        return new ObjectMapper().writeValueAsString(projectSpec);
+    }
+
+    public static ProjectSpec getCompiledSpec(Env env) {
+        return getProjectSpec(env);
+    }
+
     @SuppressWarnings("unused")
-    public static Map<String, ProjectSpec.Class> getAllClasses(Env env) {
+    public static Map<String, ProjectSpec.ClassSpec> getAllClasses(Env env) {
         return CLASSES_PER_ENV.get(env);
     }
 
-    private static Map<String, ProjectSpec.Class> generateClassesForEnv() {
-        Map<String, ProjectSpec.Class> classes = new HashMap<>();
+    private static Map<String, ProjectSpec.ClassSpec> generateClassesForEnv() {
+        Map<String, ProjectSpec.ClassSpec> classes = new HashMap<>();
         for (int i = 0; i < 3; i++) {
             final String className = className(i);
-            classes.put(className, new ProjectSpec.Class(classUuidStore.next(), className, null, false));
+            classes.put(className, new ProjectSpec.ClassSpec(classUuidStore.next(), className, null, false));
         }
         return classes;
     }

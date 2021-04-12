@@ -1,6 +1,7 @@
 package com.golan.local.dataflow.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.golan.local.dataflow.controllers.Scenarios.Scenario;
 import com.golan.local.dataflow.data.Dfql;
 import com.golan.local.dataflow.data.Env;
 import com.golan.local.dataflow.data.Fleet;
@@ -11,8 +12,8 @@ import com.golan.local.dataflow.json.iam.organizations.Organization;
 import com.golan.local.dataflow.json.orchestration.environments.Environment;
 import com.golan.local.dataflow.json.orchestration.projects.Project;
 import com.golan.local.dataflow.json.orchestration.spec.ProjectSpec;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,30 +26,46 @@ import java.util.UUID;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class OrcDataGenerator {
+
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    @Value("${data.environment.name}")
-    private String envName;
+    private final Scenarios scenarios;
+
 
 
     List<Organization> getOrganizationsList() {
         log.debug("~~~[getOrganizations]");
-        if (envName.equalsIgnoreCase("load")) {
-            return LoadEnvData.getAllOrganizations();
-        } else if (envName.equalsIgnoreCase("WhiteRaven")) {
-            return WhiteRaven.getAllOrganizations();
-        } else {
-            throw new IllegalArgumentException("Unknown Env Name: " + envName);
+        if (scenarios.isEmpty()) {
+            throw new IllegalArgumentException("Unknown Scenario CSV: " + scenarios);
         }
+
+        final ArrayList<Organization> result = new ArrayList<>();
+        if (scenarios.contains(Scenario.Load)) {
+            result.addAll( LoadEnvData.getAllOrganizations() );
+        }
+        if (scenarios.contains(Scenario.WhiteRaven)) {
+            result.addAll( WhiteRaven.getAllOrganizations() );
+        }
+        if (scenarios.contains(Scenario.Fleet)) {
+            result.addAll( Fleet.getAllOrganizations() );
+        }
+        return result;
     }
+
 
 
     List<Project> getProjectsForOrg(String org) {
         List<Project> allProjects;
         if (WhiteRaven.matchOrganization(org)) {
             allProjects = WhiteRaven.getProjectsForOrg(org);
-        } else {
+        }
+        else if (Fleet.matchOrganization(org)) {
+            return Collections.singletonList(Fleet.FLEET_PROJ);
+        }
+        else {
             allProjects = Collections.emptyList();
         }
         return allProjects;
@@ -102,8 +119,8 @@ public class OrcDataGenerator {
 
     ProjectSpec getLatestProjectSpec(Env env) throws IOException {
         if (WhiteRaven.findEnvironment(env.getUuid()) != null) {
-             return WhiteRaven.getProjectSpec(env);
-         }
+            return WhiteRaven.getProjectSpec(env);
+        }
         else {
             return MAPPER.readValue(projectSpecForOtherUsages(env.getOrg(), env.getProj() + "~" + env.getEnv()), ProjectSpec.class);
         }
@@ -137,6 +154,38 @@ public class OrcDataGenerator {
                 return Fleet.PROJECT_SPEC_PROD;
             default:
                 throw new IllegalArgumentException("No such env: " + env);
+        }
+    }
+
+    ProjectSpec getLatestCompiledSpec(Env env) throws IOException {
+        return getLatestCompiledSpec(env.getOrg() ,env.getProj() + "~" + env.getEnv());
+    }
+
+    ProjectSpec getLatestCompiledSpec(String organization, String project) throws IOException {
+        return MAPPER.readValue( getLatestCompiledSpecAsString(organization, project), ProjectSpec.class );
+    }
+
+    String getLatestCompiledSpecAsString(String organization, String project) {
+        final String orgProj = organization + "/" + project;
+        switch (orgProj) {
+            case "mormont/shayba~dev":
+                return Shayba.CS_MORMONT_SHAYBA_DEV;
+            case "mormont/shayba":
+            case "mormont/shayba~prod":
+                throw new IllegalArgumentException("We do not support [prod] for [mormont/shayba] yet");
+            case "golan2/shayba~dev":
+                return Shayba.CS_GOLAN2_SHAYBA_DEV;
+            case "golan2/shayba":
+            case "golan2/shayba~prod":
+                return Shayba.CS_GOLAN2_SHAYBA_PROD;
+            case "fleet/fleet-trucks-iot~dev":
+                return Fleet.COMPILED_SPEC_DEV;
+            case "fleet/fleet-trucks-iot":
+            case "fleet/fleet-trucks-iot~prod":
+                return Fleet.COMPILED_SPEC_PROD;
+            default:
+                throw new IllegalArgumentException("Unrecognized project: " + orgProj);
+
         }
     }
 }
