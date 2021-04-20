@@ -94,7 +94,7 @@ public class OrcDataGenerator {
             return shayba.getUuid();
         }
 
-        throw new RejectException(HttpStatus.NOT_FOUND, "Project does not exist");
+        throw new ProjectDoesNotExistsException();
     }
 
     Env findEnvByUuid(String envUuid) throws RejectException {
@@ -113,7 +113,7 @@ public class OrcDataGenerator {
             return shayba;
         }
 
-        throw new RejectException(HttpStatus.NOT_FOUND, "Project does not exist");
+        throw new ProjectDoesNotExistsException();
 
     }
 

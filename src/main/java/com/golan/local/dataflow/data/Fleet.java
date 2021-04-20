@@ -1,13 +1,17 @@
 package com.golan.local.dataflow.data;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.golan.local.dataflow.controllers.ProjectDoesNotExistsException;
 import com.golan.local.dataflow.json.iam.organizations.Organization;
 import com.golan.local.dataflow.json.orchestration.projects.Project;
 import com.golan.local.dataflow.json.orchestration.spec.ProjectSpec;
 import com.golan.local.dataflow.json.registry.RegObject;
+import com.golan.local.dataflow.json.registry.RegRelation;
 
 import java.io.IOException;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -21,12 +25,14 @@ public class Fleet {
 
     public enum Environment {DEV, PROD}
 
-    public  static final String       ORG        = "fleet";
-    public  static final String       PROJ       = "fleet-trucks-iot";
-    public  static final Project      FLEET_PROJ = new Project(ORG, PROJ, PROJ, "", null);
-    public  static final Organization FLEET_ORG  = new Organization("fleet", "fleet");
-    private static final String       DEV        = Environment.DEV.toString().toLowerCase();
-    private static final String       PROD       = Environment.PROD.toString().toLowerCase();
+    public  static final String       ORG          = "fleet";
+    public  static final String       PROJ         = "fleet-trucks-iot";
+    private static final String       C_TRACKER    = "tracker";
+    private static final String       C_COLLECTION = "collection";
+    public  static final Project      FLEET_PROJ   = new Project(ORG, PROJ, PROJ, "", null);
+    private static final Organization FLEET_ORG    = new Organization(ORG, ORG);
+    private static final String       DEV          = Environment.DEV.toString().toLowerCase();
+    private static final String       PROD         = Environment.PROD.toString().toLowerCase();
 
     //ATO PROD - Fleet DevSandbox
     public static final String ENV_UUID_DEV = "db01c146-8f68-11ea-a4eb-6398166be91d";
@@ -43,14 +49,28 @@ public class Fleet {
     private static final int OBJECTS_PER_CLASS = 5;
     private static final String OBJ_UUID_PREFIX = "aaaaaaaa-dddd-dddd-aaaa-000000";
     private static final UuidStore objectUuidStore = new UuidStore(OBJ_UUID_PREFIX);
-    private static final DateGenerator CREATED_AT = new DateGenerator(1577836800000L);              // 2020-01-01 00:00:00
-    private static final DateGenerator LAST_STREAM_UPDATE = new DateGenerator(1609459200000L);      // 2021-01-01 00:00:00
+    private static final DateGenerator OBJECT_DATE = new DateGenerator(946684800000L);              // 2000-01-01 00:00:00
+    private static final DateGenerator LAST_STREAM_UPDATE = new DateGenerator(978307200000L);      // 2001-01-01 00:00:00
+    private static final DateGenerator RELATION_DATE = new DateGenerator(1009843200000L);      // 2002-01-01 00:00:00
     private static final ObjectMapper MAPPER = new ObjectMapper();
-    private static final Map<Environment, Map<String, List<RegObject>>> allObjects = createObjectsPerEnvironmentPerClass();     // Map:  Env  ==>  Map:  ClassName ==>  List of Objects
+    private static final Map<Environment, Map<String, List<RegObject>>> allObjects = createObjectsPerEnvironmentPerClass();         // Map:  Env  ==>  Map:  ClassName ==>  List of Objects
+    private static final Map<Environment, List<RegRelation>> allRelations = createRelationsPerEnvironment();       // Map:  Env  ==>  Map:  ClassName ==>  List of Objects
 
 
     public static Collection<Organization> getAllOrganizations() {
         return Collections.singletonList(Fleet.FLEET_ORG);
+    }
+
+    public static boolean match(OrgProj orgProj, String env) {
+        return match(orgProj) && matchEnvironment(env);
+    }
+
+    private static boolean match(OrgProj op) {
+        return op.getOrg().equals(ORG) && op.getProj().equals(PROJ);
+    }
+
+    private static boolean matchEnvironment(String env) {
+        return Arrays.stream(Environment.values()).anyMatch(e -> e.toString().equalsIgnoreCase(env));
     }
 
     public static boolean matchOrganization(String org) {
@@ -92,6 +112,12 @@ public class Fleet {
         return Collections.emptyMap();
     }
 
+    public static List<RegObject> getObjectsOfClass(OrgProj op, String env, String className) throws ProjectDoesNotExistsException {
+        final Env environment = findEnvironment(op.getOrg(), op.getProj() + "~" + env);
+        if (environment == null) throw new ProjectDoesNotExistsException();
+        return getObjectsOfClass(environment, className);
+    }
+
     public static List<RegObject> getObjectsOfClass(Env env, String className) {
         if (DEV.equals(env.getEnv())) {
             return allObjects.get(Environment.DEV).get(className);
@@ -101,6 +127,25 @@ public class Fleet {
         }
         return Collections.emptyList();
     }
+
+    public static List<RegRelation> getRelationsOfObject(String env, String sourceClassName, String sourceObjectId) {
+        final List<RegRelation> relations;
+        if (DEV.equalsIgnoreCase(env)) {
+            relations = allRelations.get(Environment.DEV);
+        }
+        else {
+            relations = allRelations.get(Environment.PROD);
+        }
+
+        return relations
+                .stream()
+                .filter( r-> r.getSource().getClassName().equals(sourceClassName) && r.getSource().getIdentifier().equals(sourceObjectId))
+                .collect(Collectors.toList());
+
+    }
+
+
+
 
     private static ProjectSpec getProjectSpec(Environment environment) {
         try {
@@ -119,8 +164,41 @@ public class Fleet {
     private static Map<Environment, Map<String, List<RegObject>>> createObjectsPerEnvironmentPerClass() {
         return Map.of(
                 Environment.DEV, createObjectsForEnv(Environment.DEV),
-                Environment.PROD, createObjectsForEnv(Environment.DEV)
+                Environment.PROD, createObjectsForEnv(Environment.PROD)
         );
+    }
+
+    private static Map<Environment, List<RegRelation>> createRelationsPerEnvironment() {
+        return Map.of(
+                Environment.DEV, createRelationsForEnvironment(Environment.DEV),
+                Environment.PROD, createRelationsForEnvironment(Environment.PROD)
+        );
+    }
+
+    /**
+     * We connect a Collection to a Tracker
+     * Each of them has an index (the index in the list that holds them as in {@link #createObjectsForClass(ProjectSpec.ClassSpec)})
+     * We will leave both collection_001 and tracker_001 with no connection (we need such use case of not connected objects)
+     * All the rest:
+     * Each collection will be connected to all trackers that don't have the same index
+     * When we connect a collection to a tracker we also connect the tracker to the collection (bi-directional relation)
+     */
+    private static ArrayList<RegRelation> createRelationsForEnvironment(Environment environment) {
+        final ArrayList<RegRelation> relations = new ArrayList<>();
+        final Map<String, List<RegObject>> objectsPerClass = allObjects.get(environment);
+        final List<RegObject> collections = objectsPerClass.get(C_COLLECTION);
+        final List<RegObject> trackers = objectsPerClass.get(C_TRACKER);
+        for (int c = 1 ; c < collections.size() ; c++) {
+            final RegObject collection = collections.get(c);
+            for (int t = 1; t < trackers.size(); t++) {
+                final RegObject tracker = trackers.get(t);
+                if (t != c) {
+                    relations.add(new RegRelation(RELATION_DATE.next(), collection, tracker));
+                    relations.add(new RegRelation(RELATION_DATE.next(), tracker, collection));
+                }
+            }
+        }
+        return relations;
     }
 
     /**
@@ -146,7 +224,7 @@ public class Fleet {
                 .setIdentifier(objectName(cs, index))
                 .setClassName(cs.getName())
                 .setObjectUuid(objectUuidStore.next())
-                .setCreatedAt(RegObject.SIMPLE_DATE_FORMAT.format(CREATED_AT.next()))
+                .setCreatedAt(RegObject.SIMPLE_DATE_FORMAT.format(OBJECT_DATE.next()))
                 .setDescription("Desc Rip T on " + index)
                 .setLastStreamUpdate(RegObject.SIMPLE_DATE_FORMAT.format(LAST_STREAM_UPDATE.next()))                ;
     }

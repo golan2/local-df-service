@@ -133,10 +133,10 @@ public class OrchestrationController {
             return getLatestProjectSpec(Shayba.ORG_GOLAN2, Shayba.PROJECT+"~prod", revision, "", internalToken);
         }
         else if (Fleet.ENV_UUID_DEV.equalsIgnoreCase(envUuid)) {
-            return getLatestProjectSpec(Fleet.ORG, Fleet.PROJ, revision, "", internalToken);
+            return getLatestProjectSpec(Fleet.ORG, Fleet.PROJ + "~dev", revision, "", internalToken);
         }
         else if (Fleet.ENV_UUID_PROD.equalsIgnoreCase(envUuid)) {
-            return getLatestProjectSpec(Fleet.ORG, Fleet.PROJ, revision, "", internalToken);
+            return getLatestProjectSpec(Fleet.ORG, Fleet.PROJ + "~prod", revision, "", internalToken);
         }
         else if (WhiteRaven.findEnvironment(UUID.fromString(envUuid)) != null) {
             final Env env = WhiteRaven.findEnvironment(UUID.fromString(envUuid));

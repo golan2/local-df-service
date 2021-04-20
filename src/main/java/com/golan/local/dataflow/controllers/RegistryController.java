@@ -13,11 +13,13 @@ import com.golan.local.dataflow.json.iam.organizations.Organization;
 import com.golan.local.dataflow.json.orchestration.projects.Project;
 import com.golan.local.dataflow.json.orchestration.spec.ProjectSpec;
 import com.golan.local.dataflow.json.registry.Attribute;
+import com.golan.local.dataflow.json.registry.MultiRelationshipResponse;
 import com.golan.local.dataflow.json.registry.ObjectCount;
 import com.golan.local.dataflow.json.registry.ObjectDetails;
 import com.golan.local.dataflow.json.registry.ObjectUuidResponse;
 import com.golan.local.dataflow.json.registry.ObjectsResponse;
 import com.golan.local.dataflow.json.registry.RegObject;
+import com.golan.local.dataflow.json.registry.RegRelation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -49,6 +51,12 @@ public class RegistryController {
     private static final String CLASS_VEHICLE = "vehicle";
     private static final String CLASS_ERROR = "error";
     private static final String CLASS_COW = "cow";
+    private static final String ENV_UUID = "envUuid";
+    private static final String CLASS_NAME = "className";
+    private static final String OBJECT_ID = "objectId";
+    private static final String RELATIONSHIP = "relationshipName";
+    private static final String TARGET_OBJECT = "targetObjectId";
+    private static final String HAS_MANY = "hasMany";
 
     private final OrchestrationController orchestrationController;
     private final OrcDataGenerator orcData;
@@ -106,9 +114,9 @@ public class RegistryController {
     }
 
     @SuppressWarnings({"unused"})
-    @GetMapping(value = "/_/~{envUuid}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/_/~{" + ENV_UUID + "}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ObjectsResponse getObjectsOfEnvUuid(
-            @PathVariable("envUuid") String envUuid,
+            @PathVariable(ENV_UUID) String envUuid,
             @RequestParam(value = "limit", defaultValue = "100", required = false) int limit,
             @RequestParam(value = "cursor", defaultValue = "", required = false) String cursor) {
 
@@ -117,40 +125,43 @@ public class RegistryController {
     }
 
     @SuppressWarnings("unused")
-    @GetMapping(value = "/{org}/{proj}~{env}/{className}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/{org}/{proj}~{env}/{" + CLASS_NAME + "}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ObjectsResponse getObjectsOfClass(
             @PathVariable("org") String org,
             @PathVariable("proj") String proj,
             @PathVariable("env") String env,
-            @PathVariable("className") String className,
+            @PathVariable(CLASS_NAME) String className,
             @RequestParam(value = "limit", defaultValue = "100", required = false) int limit,
-            @RequestParam(value = "cursor", defaultValue = "", required = false) String cursor) {
+            @RequestParam(value = "cursor", defaultValue = "", required = false) String cursor) throws ProjectDoesNotExistsException {
 
         final OrgProj orgProj = new OrgProj(org, proj);
         final List<RegObject> allObjects;
         if (WhiteRaven.match(orgProj, env)) {
             allObjects = WhiteRaven.getObjectsOfClass(orgProj, env, className);
         }
+        else if (Fleet.match(orgProj, env)) {
+            allObjects = Fleet.getObjectsOfClass(orgProj, env, className);
+        }
         else {
-            allObjects = Collections.emptyList();
+            throw new ProjectDoesNotExistsException();
         }
         return resolveBulk(allObjects, limit, cursor);
     }
 
-    @GetMapping(value = "/_/~{envUuid}/{className}/{objectId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/_/~{" + ENV_UUID + "}/{" + CLASS_NAME + "}/{" + OBJECT_ID + "}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ObjectDetails getObjectDetails(
-            @PathVariable("envUuid") String envUuid,
-            @PathVariable("className") String className,
-            @PathVariable("objectId") String objectId) throws RejectException, ParseException {
+            @PathVariable(ENV_UUID) String envUuid,
+            @PathVariable(CLASS_NAME) String className,
+            @PathVariable(OBJECT_ID) String objectId) throws RejectException, ParseException {
 
         final RegObject regObject = findGeneratedObject(envUuid, className, objectId);
         return convertToObjectDetails(regObject);
     }
 
-    @GetMapping(value = "/_/~{envUuid}/{className}/{objectId}/_uuid", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ObjectUuidResponse getObjectUuid(@PathVariable("envUuid") String envUuid,
-                                            @PathVariable("className") String className,
-                                            @PathVariable("objectId") String objectId) throws RejectException, IOException {
+    @GetMapping(value = "/_/~{" + ENV_UUID + "}/{" + CLASS_NAME + "}/{" + OBJECT_ID + "}/_uuid", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ObjectUuidResponse getObjectUuid(@PathVariable(ENV_UUID) String envUuid,
+                                            @PathVariable(CLASS_NAME) String className,
+                                            @PathVariable(OBJECT_ID) String objectId) throws RejectException, IOException {
         final RegObject regObject = findGeneratedObject(envUuid, className, objectId);
         final Env env = orcData.findEnvByUuid(envUuid);
         final ProjectSpec projectSpec = orcData.getLatestCompiledSpec(env);
@@ -162,9 +173,9 @@ public class RegistryController {
     }
 
     @SuppressWarnings("unused")
-    @GetMapping(value = "/_/~{envUuid}/_count", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Collection<ObjectCount> countObjects(@PathVariable("envUuid") String envUuid) {
-        log.debug("[countObjects] envUuid={}", envUuid);
+    @GetMapping(value = "/_/~{" + ENV_UUID + "}/_count", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Collection<ObjectCount> countObjects(@PathVariable(ENV_UUID) String envUuid) {
+        log.debug("[countObjects] " + ENV_UUID + "={}", envUuid);
         final Map<String, ObjectCount> objectCountPerClass = this.objectCountPerClass.get(UUID.fromString(envUuid));
         if (objectCountPerClass == null) {
             throw new IllegalArgumentException("No such env: " + envUuid);
@@ -176,9 +187,9 @@ public class RegistryController {
     }
 
     @SuppressWarnings("unused")
-    @GetMapping(value = "/_/~{envUuid}/{class}/_count", produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<ObjectCount> countObjects(@PathVariable("envUuid") String envUuid, @PathVariable("class") String className) {
-        log.debug("[countObjects] envUuid={}", envUuid);
+    @GetMapping(value = "/_/~{" + ENV_UUID + "}/{" + CLASS_NAME + "}/_count", produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<ObjectCount> countObjects(@PathVariable(ENV_UUID) String envUuid, @PathVariable("class") String className) {
+        log.debug("[countObjects] " + ENV_UUID + "={}", envUuid);
         final Map<String, ObjectCount> objectCountPerClass = this.objectCountPerClass.get(UUID.fromString(envUuid));
         if (objectCountPerClass == null) {
             throw new IllegalArgumentException("No such env: " + envUuid);
@@ -189,9 +200,29 @@ public class RegistryController {
         }
     }
 
-
-
-
+    @GetMapping(value = "/_/~{" + ENV_UUID + "}/{" + CLASS_NAME + "}/{" + OBJECT_ID + "}/r/{"+ RELATIONSHIP+"}")
+    public MultiRelationshipResponse getObjectsRelatedToObject(@PathVariable(ENV_UUID) String envUuid,
+                                                               @PathVariable(CLASS_NAME) String sourceClassName,
+                                                               @PathVariable(OBJECT_ID) String sourceObjectId,
+                                                               @PathVariable(RELATIONSHIP) String relationshipName) throws RejectException {
+        if (log.isTraceEnabled()) log.trace("get-relationship envUuid=["+envUuid+"] sourceClassName=["+sourceClassName+"] sourceObjectId=["+sourceObjectId+"] relationshipName=["+relationshipName+"]");
+        final Env fleet = Fleet.findEnvironment(UUID.fromString(envUuid));
+        if (fleet != null) {
+            final List<RegRelation> relationships = Fleet.getRelationsOfObject(fleet.getEnv(), sourceClassName, sourceObjectId);
+            final List<RegObject> objects = relationships
+                    .stream()
+                    .map(RegRelation::getDestination)
+                    .collect(Collectors.toList());
+            if (objects.isEmpty()) {
+                //for some dumb reason this is how RegV2 works ...
+                throw new RejectException(HttpStatus.NOT_FOUND, "Relationship does not exist.");
+            }
+            return new MultiRelationshipResponse(new Meta("", "", 100, null), objects, HAS_MANY, relationshipName);
+        }
+        else {
+            throw new ProjectDoesNotExistsException();
+        }
+    }
 
     private ObjectDetails convertToObjectDetails(RegObject regObject) throws ParseException {
         return new ObjectDetails()
@@ -202,7 +233,7 @@ public class RegistryController {
                 .setDescription(regObject.getDescription());
     }
 
-    private List<RegObject> generateObjectsList(@PathVariable("envUuid") String envUuid) {
+    private List<RegObject> generateObjectsList(@PathVariable(ENV_UUID) String envUuid) {
         final UUID envUUID = UUID.fromString(envUuid);
         final Env whiteReaven = WhiteRaven.findEnvironment(envUUID);
         final Env fleet = Fleet.findEnvironment(envUUID);
@@ -228,7 +259,7 @@ public class RegistryController {
         return Collections.emptyList();
     }
 
-    private RegObject findGeneratedObject(@PathVariable("envUuid") String envUuid, @PathVariable("className") String className, @PathVariable("objectId") String objectId) throws RejectException {
+    private RegObject findGeneratedObject(String envUuid, String className, String objectId) throws RejectException {
         return registryObjectsPerEnvironment.get(envUuid)
                 .stream()
                 .filter(o -> o.getClassName().equals(className) && o.getIdentifier().equals(objectId))
