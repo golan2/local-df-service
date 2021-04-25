@@ -20,6 +20,7 @@ import com.golan.local.dataflow.json.registry.ObjectUuidResponse;
 import com.golan.local.dataflow.json.registry.ObjectsResponse;
 import com.golan.local.dataflow.json.registry.RegObject;
 import com.golan.local.dataflow.json.registry.RegRelation;
+import com.golan.local.dataflow.json.registry.RelationshipDetails;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -209,9 +210,10 @@ public class RegistryController {
         final Env fleet = Fleet.findEnvironment(UUID.fromString(envUuid));
         if (fleet != null) {
             final List<RegRelation> relationships = Fleet.getRelationsOfObject(fleet.getEnv(), sourceClassName, sourceObjectId);
-            final List<RegObject> objects = relationships
+            final List<RelationshipDetails> objects = relationships
                     .stream()
                     .map(RegRelation::getDestination)
+                    .map(RelationshipDetails::new)
                     .collect(Collectors.toList());
             if (objects.isEmpty()) {
                 //for some dumb reason this is how RegV2 works ...

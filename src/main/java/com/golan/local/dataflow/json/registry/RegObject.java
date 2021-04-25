@@ -50,81 +50,17 @@ public class RegObject {
     @JsonIgnore
     private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
-    /*
-    @JsonProperty("identifier")
-    public String getIdentifier() {
-        return identifier;
-    }
 
-    @JsonProperty("identifier")
-    public void setIdentifier(String identifier) {
-        this.identifier = identifier;
-    }
-
-    @JsonProperty("has_cert")
-    public Boolean getHasCert() {
-        return hasCert;
-    }
-
-    @JsonProperty("has_cert")
-    public void setHasCert(Boolean hasCert) {
-        this.hasCert = hasCert;
-    }
-
-    @JsonProperty("lastStreamUpdate")
-    public java.lang.Object getLastStreamUpdate() {
-        return lastStreamUpdate;
-    }
-
-    @JsonProperty("lastStreamUpdate")
-    public void setLastStreamUpdate(java.lang.Object lastStreamUpdate) {
-        this.lastStreamUpdate = lastStreamUpdate;
-    }
-
-    @JsonProperty("created_at")
-    public String getCreatedAt() {
-        return createdAt;
-    }
-
-    @JsonProperty("created_at")
-    public void setCreatedAt(String createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    @JsonProperty("description")
-    public String getDescription() {
-        return description;
-    }
-
-    @JsonProperty("description")
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    @JsonProperty("class")
-    public String getClass_() {
-        return _class;
-    }
-
-    @JsonProperty("class")
-    public void setClass_(String _class) {
-        this._class = _class;
-    }
-
-    @JsonAnyGetter
-    public Map<String, java.lang.Object> getAdditionalProperties() {
-        return this.additionalProperties;
-    }
-
-    @JsonAnySetter
-    public void setAdditionalProperty(String name, java.lang.Object value) {
-        this.additionalProperties.put(name, value);
-    }
-
-     */
-
+    @JsonIgnore
     public Date getCreatedAtAsDate() throws ParseException {
+        if (getCreatedAt() == null) return null;
         return SIMPLE_DATE_FORMAT.parse(getCreatedAt());
+    }
+
+    @JsonIgnore
+    public Date getLastStreamUpdateAsDate() throws ParseException {
+        if (getLastStreamUpdate() == null) return null;
+        return SIMPLE_DATE_FORMAT.parse(getLastStreamUpdate());
     }
 }
 

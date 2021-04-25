@@ -11,7 +11,7 @@ import java.util.List;
 @AllArgsConstructor
 public class MultiRelationshipResponse {
     private Meta meta;
-    private List<RegObject> objects;
+    private List<RelationshipDetails> objects;
     private String type;
     @JsonProperty("class")
     private String clazz;
