@@ -165,6 +165,11 @@ public class OrcDataGenerator {
         return MAPPER.readValue( getLatestCompiledSpecAsString(organization, project), ProjectSpec.class );
     }
 
+    String getLatestCompiledSpecAsString(String envUuid) throws RejectException {
+        final Env env = findEnvByUuid(envUuid);
+        return getLatestCompiledSpecAsString(env.getOrg(), env.getProj() + "~" + env.getEnv());
+    }
+
     String getLatestCompiledSpecAsString(String organization, String project) {
         final String orgProj = organization + "/" + project;
         switch (orgProj) {

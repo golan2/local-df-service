@@ -117,6 +117,13 @@ public class OrchestrationController {
         return dataGenerator.getLatestCompiledSpecAsString(organization, project);
     }
 
+    @GetMapping(value = "v1/projects/_/~{env_uuid}/spec/revisions/latest/compiled", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getLatestCompiledSpec(@PathVariable("env_uuid") String envUuid,
+                                        @RequestHeader(name = "X-Internal-Token", defaultValue = "", required = false) String internalToken) throws RejectException {
+        log.debug("~~~[getLatestCompiledSpec] env_uuid={}", envUuid);
+        return dataGenerator.getLatestCompiledSpecAsString(envUuid);
+    }
+
     ///v1/projects/_/~aea50ab6-32db-11ea-977e-29d880279c99/spec/revisions/470230d5a568a353585033e6aa06d1e6d43ad4ab/source.json
     @GetMapping(value = "v1/projects/_/~{envUuid}/spec/revisions/{revision}/source.json", produces = MediaType.APPLICATION_JSON_VALUE)
     public String getRevisionProjectSpecInternal(@PathVariable("envUuid") String envUuid,
