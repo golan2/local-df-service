@@ -1,6 +1,7 @@
 package com.golan.local.dataflow.controllers;
 
 
+import com.golan.local.dataflow.data.DateGenerator;
 import com.golan.local.dataflow.data.Dfql;
 import com.golan.local.dataflow.data.Env;
 import com.golan.local.dataflow.data.Fleet;
@@ -13,6 +14,8 @@ import com.golan.local.dataflow.json.iam.organizations.Organization;
 import com.golan.local.dataflow.json.orchestration.projects.Project;
 import com.golan.local.dataflow.json.orchestration.spec.ProjectSpec;
 import com.golan.local.dataflow.json.registry.Attribute;
+import com.golan.local.dataflow.json.registry.CustomDateSerializer;
+import com.golan.local.dataflow.json.registry.DataType;
 import com.golan.local.dataflow.json.registry.MultiRelationshipResponse;
 import com.golan.local.dataflow.json.registry.ObjectCount;
 import com.golan.local.dataflow.json.registry.ObjectDetails;
@@ -32,10 +35,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
 import java.text.ParseException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,24 +57,25 @@ public class RegistryController {
     private static final String CLASS_NAME = "className";
     private static final String OBJECT_ID = "objectId";
     private static final String RELATIONSHIP = "relationshipName";
-    private static final String TARGET_OBJECT = "targetObjectId";
     private static final String HAS_MANY = "hasMany";
+
+    private static final DateGenerator ATTR_DATE = new DateGenerator(1262304000000L);              // 2010-01-01 00:00:00
+    private static final DateGenerator ATTR_TIMESTAMP = new DateGenerator(1293840000000L);              // 2011-01-01 00:00:00x
 
     private final OrchestrationController orchestrationController;
     private final OrcDataGenerator orcData;
 
-    private final Map<UUID, Map<String, ObjectCount>> objectCountPerClass;      //env_uuid  =>   class_name  ==>  object_count
+    private final Map<UUID, Map<String, ObjectCount>> objectCountPerClassPerEnvUuid;      //env_uuid  =>   class_name  ==>  object_count
     private final Map<String, List<RegObject>> registryObjectsPerEnvironment;   //env_uuid  =>   registry_object
 
     public RegistryController(OrchestrationController orchestrationController, OrcDataGenerator orcData) {
         this.orchestrationController = orchestrationController;
         this.orcData = orcData;
-        this.objectCountPerClass = initDfqlObjectCountPerClass();
+        this.objectCountPerClassPerEnvUuid = initDfqlObjectCountPerClass();
         this.registryObjectsPerEnvironment = createObjectsForAllPossibleEnvironments();
     }
 
     private Map<String, List<RegObject>> createObjectsForAllPossibleEnvironments() {
-        final HashMap<UUID, List<RegObject>> map = new HashMap<>();
         assert orchestrationController != null;
         final List<Organization> organizations = orcData.getOrganizationsList();
         final List<Project> projects = flatProjects(organizations).collect(Collectors.toList());
@@ -177,7 +179,7 @@ public class RegistryController {
     @GetMapping(value = "/_/~{" + ENV_UUID + "}/_count", produces = MediaType.APPLICATION_JSON_VALUE)
     public Collection<ObjectCount> countObjects(@PathVariable(ENV_UUID) String envUuid) {
         log.debug("[countObjects] " + ENV_UUID + "={}", envUuid);
-        final Map<String, ObjectCount> objectCountPerClass = this.objectCountPerClass.get(UUID.fromString(envUuid));
+        final Map<String, ObjectCount> objectCountPerClass = this.objectCountPerClassPerEnvUuid.get(UUID.fromString(envUuid));
         if (objectCountPerClass == null) {
             throw new IllegalArgumentException("No such env: " + envUuid);
         } else if (objectCountPerClass.isEmpty()) {
@@ -191,7 +193,7 @@ public class RegistryController {
     @GetMapping(value = "/_/~{" + ENV_UUID + "}/{" + CLASS_NAME + "}/_count", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<ObjectCount> countObjects(@PathVariable(ENV_UUID) String envUuid, @PathVariable("class") String className) {
         log.debug("[countObjects] " + ENV_UUID + "={}", envUuid);
-        final Map<String, ObjectCount> objectCountPerClass = this.objectCountPerClass.get(UUID.fromString(envUuid));
+        final Map<String, ObjectCount> objectCountPerClass = this.objectCountPerClassPerEnvUuid.get(UUID.fromString(envUuid));
         if (objectCountPerClass == null) {
             throw new IllegalArgumentException("No such env: " + envUuid);
         } else if (objectCountPerClass.isEmpty()) {
@@ -231,21 +233,21 @@ public class RegistryController {
                 .setObjectId(regObject.getIdentifier())
                 .setClassName(regObject.getClassName())
                 .setCreatedAt(regObject.getCreatedAtAsDate())
-                .setAttributes(createAttributes(regObject))
+                .setAttributes(regObject.getAttributes())
                 .setDescription(regObject.getDescription());
     }
 
     private List<RegObject> generateObjectsList(@PathVariable(ENV_UUID) String envUuid) {
         final UUID envUUID = UUID.fromString(envUuid);
-        final Env whiteReaven = WhiteRaven.findEnvironment(envUUID);
+        final Env whiteRaven = WhiteRaven.findEnvironment(envUUID);
         final Env fleet = Fleet.findEnvironment(envUUID);
 
-        if (whiteReaven != null) {
+        if (whiteRaven != null) {
             return WhiteRaven
-                    .getAllClasses(whiteReaven)
+                    .getAllClasses(whiteRaven)
                     .values()
                     .stream()
-                    .flatMap(clazz -> WhiteRaven.getObjectsOfClass(whiteReaven, clazz.getName()).stream())
+                    .flatMap(clazz -> WhiteRaven.getObjectsOfClass(whiteRaven, clazz.getName()).stream())
                     .collect(Collectors.toList());
         }
 
@@ -255,10 +257,31 @@ public class RegistryController {
                     .values()
                     .stream()
                     .flatMap(clazz -> Fleet.getObjectsOfClass(fleet, clazz.getName()).stream())
+                    .map(this::enrichWithFleetAttributes)
                     .collect(Collectors.toList());
         }
 
         return Collections.emptyList();
+    }
+
+    private RegObject enrichWithFleetAttributes(RegObject regObject) {
+        if ("tracker".equals(regObject.getClassName())) {
+            regObject.setAttributes(createTrackerAttributes(regObject));
+        }
+        else {
+            regObject.setAttributes(Collections.emptyMap());
+        }
+        return regObject;
+    }
+
+    private Map<String, Attribute> createTrackerAttributes(RegObject regObject) {
+        return Map.of(
+                "surplus_date", createAttribute("", DataType.TEXT, null),       //empty attribute
+                "geotabid", createAttribute("oldGeotabId", DataType.TEXT, regObject.getIdentifier()),
+                "tech_data", createAttribute("tech_data", DataType.TEXT, regObject.getClassName() + "|" + regObject.getCreatedAt()),
+                "random", createAttribute("random", DataType.INTEGER, regObject.hashCode()),
+                "retire_date", createAttribute("retire_date", DataType.TIMESTAMP, new CustomDateSerializer().format(ATTR_TIMESTAMP.next()))
+        );
     }
 
     private RegObject findGeneratedObject(String envUuid, String className, String objectId) throws RejectException {
@@ -269,22 +292,11 @@ public class RegistryController {
                 .orElseThrow(() -> new RejectException(HttpStatus.NOT_FOUND, "DataflowObject does not exist."));
     }
 
-    private Map<String, Attribute> createAttributes(RegObject regObject) {
-        return Map.of(
-                "simulateEmptyAttribute", createAttribute("", null),
-                "name", createAttribute("name", regObject.getIdentifier()),
-                "stam", createAttribute("stam", regObject.getClassName() + "|" + regObject.getCreatedAt()),
-                "hashCode", createAttribute("hashCode", regObject.hashCode())
-        );
-    }
-
-    private Attribute createAttribute(String name, final Object value) {
-        return new Attribute().setName(name).setValue(value).setCreatedAt(new Date());
+    private Attribute createAttribute(String name, DataType dataType, final Object value) {
+        return new Attribute().setName(name).setType(dataType).setValue(value).setCreatedAt(ATTR_DATE.next());
     }
 
     private ObjectsResponse resolveBulk(List<RegObject> allObjects, int limit, String cursor) {
-        final ArrayList<RegObject> objects = new ArrayList<>(limit);
-
         final int startIndex = Paging.startIndex(cursor);
         final int lastIndex = Paging.lastIndex(startIndex, limit, allObjects.size());
         final List<RegObject> thisBulk = Paging.thisBulk(allObjects, startIndex, lastIndex);

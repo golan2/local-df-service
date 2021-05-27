@@ -48,7 +48,7 @@ public class RegObject {
     @JsonProperty("class")
     private String className;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Attribute> attributes;
 
 
     @JsonIgnore
