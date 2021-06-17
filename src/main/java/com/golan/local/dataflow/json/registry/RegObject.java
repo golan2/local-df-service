@@ -31,8 +31,6 @@ import java.util.UUID;
         "class"
 })
 public class RegObject {
-    public static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-
     @JsonIgnore
     private UUID objectUuid;  //we need it to use it internally but it is not part of the JSON we return on REST API
     @JsonProperty("identifier")
@@ -54,13 +52,13 @@ public class RegObject {
     @JsonIgnore
     public Date getCreatedAtAsDate() throws ParseException {
         if (getCreatedAt() == null) return null;
-        return SIMPLE_DATE_FORMAT.parse(getCreatedAt());
+        return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").parse(getCreatedAt());
     }
 
     @JsonIgnore
     public Date getLastStreamUpdateAsDate() throws ParseException {
         if (getLastStreamUpdate() == null) return null;
-        return SIMPLE_DATE_FORMAT.parse(getLastStreamUpdate());
+        return new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").parse(getLastStreamUpdate());
     }
 }
 

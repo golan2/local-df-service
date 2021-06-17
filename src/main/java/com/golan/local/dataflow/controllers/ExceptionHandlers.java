@@ -1,5 +1,6 @@
 package com.golan.local.dataflow.controllers;
 
+import com.golan.local.dataflow.authentication.InternalApiUnauthorizedException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -14,9 +15,17 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @ControllerAdvice
 public class ExceptionHandlers extends ResponseEntityExceptionHandler {
 
+    @ExceptionHandler(value = { Exception.class })
+    protected ResponseEntity<Object> handle(Exception ex, WebRequest request) {
+        final String bodyOfResponse = "INTERNAL-SERVER-ERROR " + ex.getMessage();
+        log.error(bodyOfResponse, ex);
+        return handleExceptionInternal(ex, bodyOfResponse, new HttpHeaders(), HttpStatus.INTERNAL_SERVER_ERROR, request);
+    }
+
     @ExceptionHandler(value = { IllegalArgumentException.class })
     protected ResponseEntity<Object> handle(IllegalArgumentException ex, WebRequest request) {
-        String bodyOfResponse = "Can't find entity. " + ex.getMessage();
+        String bodyOfResponse = "IllegalArgumentException " + ex.getMessage();
+        log.error(bodyOfResponse, ex);
         return handleExceptionInternal(ex, bodyOfResponse, new HttpHeaders(), HttpStatus.NOT_FOUND, request);
     }
 
@@ -25,10 +34,8 @@ public class ExceptionHandlers extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(ex, ex.getResponse(), new HttpHeaders(), ex.getHttpStatus(), request);
     }
 
-    @Override
-    protected ResponseEntity<Object> handleExceptionInternal(Exception ex, Object body, HttpHeaders headers, HttpStatus status, WebRequest request) {
-        if (log.isDebugEnabled()) log.debug("Returning: " + status, ex);
-        return super.handleExceptionInternal(ex, body, headers, status, request);
+    @ExceptionHandler(value = { InternalApiUnauthorizedException.class })
+    protected ResponseEntity<Object> handle(InternalApiUnauthorizedException ex, WebRequest request) {
+        return handleExceptionInternal(ex, ex.getResponse(), new HttpHeaders(), ex.getHttpStatus(), request);
     }
-
 }

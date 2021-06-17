@@ -6,6 +6,8 @@ import com.golan.local.dataflow.data.Dfql;
 import com.golan.local.dataflow.data.Env;
 import com.golan.local.dataflow.data.Fleet;
 import com.golan.local.dataflow.data.LoadEnvData;
+import com.golan.local.dataflow.data.OrgProj;
+import com.golan.local.dataflow.data.OrgProjEnv;
 import com.golan.local.dataflow.data.Shayba;
 import com.golan.local.dataflow.data.WhiteRaven;
 import com.golan.local.dataflow.json.iam.organizations.Organization;
@@ -14,7 +16,6 @@ import com.golan.local.dataflow.json.orchestration.projects.Project;
 import com.golan.local.dataflow.json.orchestration.spec.ProjectSpec;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.PathVariable;
 
@@ -22,6 +23,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Slf4j
@@ -94,7 +96,7 @@ public class OrcDataGenerator {
             return shayba.getUuid();
         }
 
-        throw new ProjectDoesNotExistsException();
+        throw new ProjectDoesNotExistsException(new OrgProjEnv(organization, project));
     }
 
     Env findEnvByUuid(String envUuid) throws RejectException {
@@ -113,16 +115,38 @@ public class OrcDataGenerator {
             return shayba;
         }
 
-        throw new ProjectDoesNotExistsException();
+        throw new ProjectDoesNotExistsException(new OrgProjEnv(envUuid));
 
     }
 
-    ProjectSpec getLatestProjectSpec(Env env) throws IOException {
+    ProjectSpec getLatestProjectSpec(Env env) throws IOException, RejectException {
+        env = completeEnv(env);
         if (WhiteRaven.findEnvironment(env.getUuid()) != null) {
             return WhiteRaven.getProjectSpec(env);
         }
         else {
             return MAPPER.readValue(projectSpecForOtherUsages(env.getOrg(), env.getProj() + "~" + env.getEnv()), ProjectSpec.class);
+        }
+    }
+
+    private Env completeEnv(Env env) throws RejectException {
+        if (env.getUuid() != null) {
+            return findEnvByUuid(env.getUuid().toString());
+        }
+        else if (env.getOrg() != null && env.getProj() != null && env.getEnv() != null) {
+            final Optional<Env> optEnv = WhiteRaven
+                    .ENVIRONMENTS
+                    .get(new OrgProj(env.getOrg(), env.getProj()))
+                    .stream()
+                    .filter(e -> env.getEnv().equals(e.getEnv()))
+                    .findAny();
+            if (!optEnv.isPresent()) {
+                throw new ProjectDoesNotExistsException(new OrgProjEnv(env));
+            }
+            return optEnv.get();
+        }
+        else {
+            throw new IllegalArgumentException("The env must either have UUID or OrgProjEnv but was given: " + env);
         }
     }
 
@@ -153,7 +177,7 @@ public class OrcDataGenerator {
             case "fleet/fleet-trucks-iot~prod":
                 return Fleet.PROJECT_SPEC_PROD;
             default:
-                throw new IllegalArgumentException("No such env: " + env);
+                throw new ProjectDoesNotExistsException(new OrgProjEnv(org, project));
         }
     }
 
@@ -172,6 +196,16 @@ public class OrcDataGenerator {
 
     String getLatestCompiledSpecAsString(String organization, String project) {
         final String orgProj = organization + "/" + project;
+
+        if (organization.startsWith(WhiteRaven.ORG_PREFIX)) {
+            try {
+                final Env env = completeEnv(new Env(new OrgProjEnv(organization, project)));
+                return WhiteRaven.getCompiledSpecAsString(env);
+            } catch (Exception e) {
+                throw new ProjectDoesNotExistsException(new OrgProjEnv(organization, project));
+            }
+        }
+
         switch (orgProj) {
             case "mormont/shayba~dev":
                 return Shayba.CS_MORMONT_SHAYBA_DEV;
@@ -189,7 +223,7 @@ public class OrcDataGenerator {
             case "fleet/fleet-trucks-iot~prod":
                 return Fleet.COMPILED_SPEC_PROD;
             default:
-                throw new IllegalArgumentException("Unrecognized project: " + orgProj);
+                throw new ProjectDoesNotExistsException(new OrgProjEnv(organization, project));
 
         }
     }

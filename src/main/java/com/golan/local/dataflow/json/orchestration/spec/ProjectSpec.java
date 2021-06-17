@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.golan.local.dataflow.json.registry.Attribute;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -34,7 +35,7 @@ public class ProjectSpec {
     private static Map<String, ClassSpec> Add(@JsonProperty("classes") Map<String, ClassSpec> classes) {
         return classes.entrySet()
                 .stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> new ClassSpec(entry.getValue().getClassUuid(), entry.getKey(), entry.getValue().streams, entry.getValue().isAdapter)));
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> new ClassSpec(entry.getValue().getClassUuid(), entry.getKey(), entry.getValue().streams, entry.getValue().getAttributes(), entry.getValue().isAdapter)));
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -49,11 +50,12 @@ public class ProjectSpec {
         private final UUID classUuid;
         private final String name;
         private final Map<String, StreamSpec> streams;
+        private final Map<String, Attribute> attributes;
         private final boolean isAdapter;
 
         @JsonCreator
         private ClassSpec(@JsonProperty("adapter") Object adapter, @JsonProperty("streams") Map<String, StreamSpec> streams) {
-            this(null, null, collectStreams(streams), adapter != null);
+            this(null, null, collectStreams(streams), Collections.emptyMap(), adapter != null);
         }
 
         private static Map<String, StreamSpec> collectStreams(Map<String, StreamSpec> streams) {
@@ -68,13 +70,6 @@ public class ProjectSpec {
         boolean isAdapter() {
             return isAdapter;
         }
-
-//        public Collection<Stream> getStreams() {
-//            if (streams == null) {
-//                return emptyList();
-//            }
-//            return Collections.unmodifiableCollection(streams.values());
-//        }
 
         Set<String> getStreamNames() {
             if (streams == null) {

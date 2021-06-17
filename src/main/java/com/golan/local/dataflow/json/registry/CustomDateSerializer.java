@@ -11,7 +11,7 @@ import java.util.Date;
 
 public class CustomDateSerializer extends StdSerializer<Date> {
 
-    private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss.SSS'Z'");
+    private final SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'hh:mm:ss.SSSS'Z'");
 
     @SuppressWarnings("unused") //used by jackson
     public CustomDateSerializer() {

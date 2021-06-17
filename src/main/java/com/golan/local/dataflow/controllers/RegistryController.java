@@ -37,9 +37,11 @@ import java.io.IOException;
 import java.text.ParseException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -59,14 +61,15 @@ public class RegistryController {
     private static final String RELATIONSHIP = "relationshipName";
     private static final String HAS_MANY = "hasMany";
 
-    private static final DateGenerator ATTR_DATE = new DateGenerator(1262304000000L);              // 2010-01-01 00:00:00
-    private static final DateGenerator ATTR_TIMESTAMP = new DateGenerator(1293840000000L);              // 2011-01-01 00:00:00x
+    private static final DateGenerator ATTR_DATE = new DateGenerator(1262304000000L);                   // 2010-01-01 00:00:00
+    private static final DateGenerator ATTR_TIMESTAMP = new DateGenerator(1293840000000L);              // 2011-01-01 00:00:00
+    private static final ProjectSpec.ClassSpec FLEET_TRACKER_SPEC = Fleet.getAllClasses(Fleet.OPE_DEV).get(Fleet.C_TRACKER);
 
     private final OrchestrationController orchestrationController;
     private final OrcDataGenerator orcData;
 
-    private final Map<UUID, Map<String, ObjectCount>> objectCountPerClassPerEnvUuid;      //env_uuid  =>   class_name  ==>  object_count
-    private final Map<String, List<RegObject>> registryObjectsPerEnvironment;   //env_uuid  =>   registry_object
+    private final Map<UUID, Map<String, ObjectCount>> objectCountPerClassPerEnvUuid;        //env_uuid  =>   class_name  ==>  object_count
+    private final Map<String, List<RegObject>> registryObjectsPerEnvironment;               //env_uuid  =>   registry_object
 
     public RegistryController(OrchestrationController orchestrationController, OrcDataGenerator orcData) {
         this.orchestrationController = orchestrationController;
@@ -97,11 +100,7 @@ public class RegistryController {
     }
 
     private String convertToEnvUuid(OrgProjEnv ope) {
-        try {
-            return orcData.convertToEnvUUID(ope.getOrg(), ope.getProject() + "~" + ope.getEnv()).toString();
-        } catch (RejectException e) {
-            throw new IllegalArgumentException("Failed to convert ope to EnvUuid.   ope: " + ope, e);
-        }
+        return orcData.convertToEnvUUID(ope.getOrg(), ope.getProject() + "~" + ope.getEnv()).toString();
     }
 
     private static Map<UUID, Map<String, ObjectCount>> initDfqlObjectCountPerClass() {
@@ -146,9 +145,20 @@ public class RegistryController {
             allObjects = Fleet.getObjectsOfClass(orgProj, env, className);
         }
         else {
-            throw new ProjectDoesNotExistsException();
+            throw new ProjectDoesNotExistsException(new OrgProjEnv(orgProj));
         }
         return resolveBulk(allObjects, limit, cursor);
+    }
+
+    @GetMapping(value = "/{org}/{proj}~{env}/{" + CLASS_NAME + "}/{" + OBJECT_ID + "}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ObjectDetails getObjectDetails(
+            @PathVariable("org") String org,
+            @PathVariable("proj") String proj,
+            @PathVariable("env") String env,
+            @PathVariable(CLASS_NAME) String className,
+            @PathVariable(OBJECT_ID) String objectId) throws RejectException, ParseException {
+        final String envUuid = convertToEnvUuid(new OrgProjEnv(org, proj, env));
+        return getObjectDetails(envUuid, className, objectId);
     }
 
     @GetMapping(value = "/_/~{" + ENV_UUID + "}/{" + CLASS_NAME + "}/{" + OBJECT_ID + "}", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -203,6 +213,26 @@ public class RegistryController {
         }
     }
 
+    @GetMapping(value = "/_/~{" + ENV_UUID + "}/{" + CLASS_NAME + "}/{" + OBJECT_ID + "}/r/{targetClassName}/{targetObjectId}")
+    public RelationshipDetails getRelationship(@PathVariable(ENV_UUID) String envUuid,
+                                                     @PathVariable(CLASS_NAME) String sourceClassName,
+                                                     @PathVariable(OBJECT_ID) String sourceObjectId,
+                                                     @PathVariable("targetClassName") String targetClassName,
+                                                     @PathVariable("targetObjectId") String targetObjectId) throws RejectException {
+        final MultiRelationshipResponse related = getObjectsRelatedToObject(envUuid, sourceClassName, sourceObjectId, targetClassName);
+        final List<RelationshipDetails> objects = related.getObjects();
+        final Optional<RelationshipDetails> existing = objects
+                .stream()
+                .filter(o -> o.getObjectId().equals(targetObjectId))
+                .findFirst();
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+        else {
+            throw new RejectException(HttpStatus.NOT_FOUND, "Invalid referent object identifier.");
+        }
+    }
+
     @GetMapping(value = "/_/~{" + ENV_UUID + "}/{" + CLASS_NAME + "}/{" + OBJECT_ID + "}/r/{"+ RELATIONSHIP+"}")
     public MultiRelationshipResponse getObjectsRelatedToObject(@PathVariable(ENV_UUID) String envUuid,
                                                                @PathVariable(CLASS_NAME) String sourceClassName,
@@ -224,7 +254,7 @@ public class RegistryController {
             return new MultiRelationshipResponse(new Meta("", "", 100, null), objects, HAS_MANY, relationshipName);
         }
         else {
-            throw new ProjectDoesNotExistsException();
+            throw new ProjectDoesNotExistsException(new OrgProjEnv(envUuid));
         }
     }
 
@@ -276,11 +306,16 @@ public class RegistryController {
 
     private Map<String, Attribute> createTrackerAttributes(RegObject regObject) {
         return Map.of(
-                "surplus_date", createAttribute("", DataType.TEXT, null),       //empty attribute
-                "geotabid", createAttribute("oldGeotabId", DataType.TEXT, regObject.getIdentifier()),
-                "tech_data", createAttribute("tech_data", DataType.TEXT, regObject.getClassName() + "|" + regObject.getCreatedAt()),
-                "random", createAttribute("random", DataType.INTEGER, regObject.hashCode()),
-                "retire_date", createAttribute("retire_date", DataType.TIMESTAMP, new CustomDateSerializer().format(ATTR_TIMESTAMP.next()))
+                "izi", new Attribute().setType(DataType.TEXT),
+                "geotabid", createAttribute("geotabid", regObject.getIdentifier()),
+                "oldGeotabId", createEmptyAttribute("oldGeotabId"),
+                "tech_data", createAttribute("tech_data", regObject.getClassName() + "|" + regObject.getCreatedAt()),
+                "vin_data", createEmptyAttribute("vin_data"),
+                "random", createAttribute("random", regObject.hashCode()),
+                "retire_date", createAttribute("retire_date", new CustomDateSerializer().format(ATTR_TIMESTAMP.next())),
+                "oldVid", createAttribute("oldVid", null),
+                "surplus_date", createEmptyAttribute("surplus_date"),
+                "depot_date", createEmptyAttribute("depot_date")
         );
     }
 
@@ -292,8 +327,29 @@ public class RegistryController {
                 .orElseThrow(() -> new RejectException(HttpStatus.NOT_FOUND, "DataflowObject does not exist."));
     }
 
-    private Attribute createAttribute(String name, DataType dataType, final Object value) {
-        return new Attribute().setName(name).setType(dataType).setValue(value).setCreatedAt(ATTR_DATE.next());
+    private Attribute createEmptyAttribute(String name) {
+        try {
+            final Attribute spec = FLEET_TRACKER_SPEC.getAttributes().get(name);
+            return new Attribute()
+                    .setName(spec.getName())
+                    .setUuid(spec.getUuid())
+                    .setType(spec.getType())
+                    .setComment(spec.getComment());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Failed to create attribute: " + name, e);
+        }
+    }
+
+    private Attribute createAttribute(String name, final Object value) {
+        final Date d = ATTR_DATE.next();
+        return createEmptyAttribute(name)
+                .setValue(value)
+                .setCreatedAt(d)
+                .setUpdatedAt(plusOneDay(d));
+    }
+
+    private Date plusOneDay(Date d) {
+        return new Date(d.getTime() + 1000 * 60 * 60 * 24);
     }
 
     private ObjectsResponse resolveBulk(List<RegObject> allObjects, int limit, String cursor) {
