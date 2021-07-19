@@ -6,8 +6,9 @@ import com.golan.local.dataflow.json.iam.organizations.Organization;
 import com.golan.local.dataflow.json.orchestration.projects.Project;
 import com.golan.local.dataflow.json.orchestration.spec.ClassesStructureResponse;
 import com.golan.local.dataflow.json.orchestration.spec.ProjectSpec;
-import com.golan.local.dataflow.json.registry.CustomDateSerializer;
 import com.golan.local.dataflow.json.registry.RegObject;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import java.text.SimpleDateFormat;
@@ -21,9 +22,9 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Slf4j
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class WhiteRaven {
 
     public  static final String COMPILED_SPEC      = Shayba.CS_MORMONT_SHAYBA_DEV;
@@ -37,18 +38,18 @@ public class WhiteRaven {
     private static final String OBJ_UUID_PREFIX    = "aaaaaaaa-aaaa-aaaa-aaaa-000000";
     private static final String CLASS_UUID_PREFIX  = "cccccccc-cccc-cccc-cccc-000000";
     private static final long   BASE_DATE          = 946684800000L;                    //  2000-01-01 00:00:00
-    private static final int    DAY_IN_MILLIS      = 86400000;
+    private static final long   DAY_IN_MILLIS      = 86400000L;
 
 
     private static final Map<OrgProjEnvClass, Integer> OBJECT_COUNT_PER_CLASS = initObjectCountPerClass();
     private static final UuidStore envUuidStore = new UuidStore(UNV_UUID_PREFIX);
     private static final UuidStore objectUuidStore = new UuidStore(OBJ_UUID_PREFIX);
     private static final UuidStore classUuidStore = new UuidStore(CLASS_UUID_PREFIX);
+    @SuppressWarnings("squid:S2386")   //it is used here: com.golan.local.dataflow.controllers.OrcDataGenerator.completeEnv
     public static final Map<OrgProj, List<Env>> ENVIRONMENTS = initEnvironments();
     private static final Map<Env, Map<String, ProjectSpec.ClassSpec>> CLASSES_PER_ENV = initClasses();
 
     private static final Map<UUID, Env> uuidToEnv = keyByEnvUuid(ENVIRONMENTS);
-    private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
     private static String organizationName(int index) {
         return String.format(ORG_PREFIX + "%03d", index+1);
@@ -67,7 +68,7 @@ public class WhiteRaven {
     }
 
     private static String objectDate(int i) {
-        return SDF.format(new Date(BASE_DATE + i * DAY_IN_MILLIS));
+        return  new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").format(new Date(BASE_DATE + i * DAY_IN_MILLIS));
     }
 
     public static boolean invalidOrganization(String organization) {
@@ -104,7 +105,7 @@ public class WhiteRaven {
     private static Map<Env, Map<String, ProjectSpec.ClassSpec>> initClasses() {
         return ENVIRONMENTS.values()
                 .stream()
-                .flatMap((Function<List<Env>, Stream<Env>>) Collection::stream)
+                .flatMap(Collection::stream)
                 .collect(Collectors.toMap(Function.identity(), env -> generateClassesForEnv()));
     }
 
@@ -254,8 +255,8 @@ public class WhiteRaven {
 
     private static Map<OrgProjEnvClass, Integer> initObjectCountPerClass() {
         final HashMap<OrgProjEnvClass, Integer> res = new HashMap<>();
-        res.put(new OrgProjEnvClass(organizationName(0), projectName(0), "dev", className(0)), 10_000 );
-        res.put(new OrgProjEnvClass(organizationName(0), projectName(0), "dev", className(1)), 700 );
+        res.put(new OrgProjEnvClass(organizationName(0), projectName(0), "dev", className(0)), 10 );
+        res.put(new OrgProjEnvClass(organizationName(0), projectName(0), "dev", className(1)), 7 );
         res.put(new OrgProjEnvClass(organizationName(0), projectName(0), "prod", className(0)), 3 );
         res.put(new OrgProjEnvClass(organizationName(0), projectName(0), "prod", className(1)), 7 );
         res.put(new OrgProjEnvClass(organizationName(0), projectName(1), "dev", className(0)), 2 );
@@ -274,7 +275,7 @@ public class WhiteRaven {
         return PROJ_COUNT_PER_ORG;
     }
 
-    public static ArrayList<Organization> getAllOrganizations() {
+    public static List<Organization> getAllOrganizations() {
         final ArrayList<Organization> res = new ArrayList<>();
         for (int i = 0; i < ORG_COUNT; i++) {
             res.add( new Organization( organizationName(i), organizationName(i) ) );
